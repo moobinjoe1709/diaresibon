@@ -38,7 +38,7 @@ Manual Load Container
                     </div>
                 </div>
             </div>
-            <form action="{{ url('autoload') }}" method="POST">
+            <form action="" method="POST" id="load_preview">
                 @csrf
                 <div class="card-body">
                         @if (\Session::has('success'))
@@ -67,7 +67,17 @@ Manual Load Container
                                 <option value="2">PIN</option>
                             </select>
                         </div>
+                        <div class="col-md-2 col-12">
+                            <input type="text" name="weight_over" id="weight_over" class="form-control" placeholder="+- น้ำหนักส่วนเกิน">
+                        </div>
+                        <div class="col-md-2 col-12">
+                            <input type="text" name="pallet_qty_sel" id="pallet_qty_sel" class="form-control" placeholder="จำนวน Pallet">
+                        </div>
+                        <div class="col-md-2 text-right">
+                            <button type="button" class="btn btn-primary load_previewmanual" {{Session::get('cart') != null ? '' : 'disabled'}}>Preview Container</button>
+                        </div>
                     </div>
+                    
                     <hr>
                     <div class="row">
                         <div class="col-md-6 col-12">
@@ -85,70 +95,73 @@ Manual Load Container
                                     <thead>
                                         <tr class="text-center">
                                             <th class="text-center">#</th>
-                                            <th class="text-center">Loc</th>
+                                            <th class="text-center"  width="10%">Loc</th>
                                             <th class="text-center">Pallet Q'TY</th>
-                                            <th class="text-center">Size / Weight</th>
-                                            <th class="text-center">Pick Up</th>
+                                            <th class="text-center">QTY Item</th>
+                                            <th class="text-center" width="25%">Size / Weight</th>
+                                            <th class="text-center" width="15%">Net Weight</th>
+                                            <th class="text-center" width="10%">Pick Up</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @php
                                             $sum_total = 0;
-                                        // dd($pallets2);
+                                            $weight_net = 0;
+                                     
                                         @endphp
-                                        @foreach ($pallets2 as $key => $pallet)
-                                        @php
-                                           $sum_pallet = 0;
-                                            //    $pallets = DB::table('tb_mainpallet')
-                                            //                 ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
-                                            //                 ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
-                                            //                 ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
-                                            //                 ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name') 
-                                            //                 ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
-                                            //                 ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
-                                            //                 ->groupBy('mp_id')
-                                            //                 ->where('tp_id',$pallet->tp_id)    
-                                            //                 ->get();
-                                            // foreach ($pallets as $key => $pallet) {
-                                            //    $sum_pallet +=  $pallet->mp_pallet_qty;
-                                            // }
-                                        @endphp
+                                        @if (count($pallets2) > 0)
+                                            @foreach ($pallets2 as $key => $pallet)
+                                            @php
+                                            $sum_pallet = 0;
+                                            $per_pallet = $pallet->mp_qty_main/$pallet->mp_pallet_qty_main;
+                                            
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center">{{ ++$key }}</td>
+                                                <td class="text-center">{{ $pallet->mp_location == 1 ? 'ROJ' : 'PIN' }}</td>
+                                                <td class="text-left"> <input type="text" class="form-control" name="pallet_qty" id="pallet_qty{{$pallet->mp_id}}" value="{{$pallet->mp_pallet_qty}}"></td>
+                                                <td class="text-center">{{$pallet->mp_qty }}</td>
+                                                <td class="text-left">Size : {{ $pallet->tp_width.'x'.$pallet->tp_length.'x'.$pallet->tp_hieght  }}  W : {{ $pallet->tp_weight }}</td>
+                                                <td>{{($pallet->mp_qty * $pallet->sit_netweight)}}</td>
+                                                <td class="text-center">
+                                                    @if ($pallet->mp_status == 1)
+                                                        <h4><p class="btn btn-danger"><i class="fas fa-times-circle"></i></p></h4>
+                                                    @else   
+                                                        @if ($pallet->mp_pallet_qty != 0)
+                                                            <h5><button type="button"  class="btn btn-success load_container"     atr="{{$pallet->mp_pallet_qty}}" atr2="{{$pallet->mp_id}}"   atr3="{{$pallet->mp_qty}}" style="cursor: pointer" ><i class="fas fa-arrow-circle-right"></i></button></h5>
+                                                        @else 
+                                                            <h5><p><i class="fas fa-times-circle"></i></p></h5>
+                                                        @endif
+                                                    @endif
+                                                
+                                                </td>
+                                                <input type="hidden" name="pallet_id" id="pallet_id" value="{{$pallet->mp_pallet_qty}}">
+                                            </tr>
+                                            <tr>
+                                            </tr>
+                                            @php
+                                                $sum_total += $pallet->mp_pallet_qty;
+                                                $weight_net += ($pallet->mp_qty * $pallet->sit_netweight);
+                                            @endphp
+                                            @endforeach
+                                        @else 
+                                            <td colspan="7" class="text-center">ไม่มีสินค้าให้เลือก</td>
+                                        @endif
                                         <tr>
-                                            <td class="text-center">{{ ++$key }}</td>
-                                            <td class="text-center">{{ $pallet->mp_location == 1 ? 'ROJ' : 'PIN' }}</td>
-                                            <td class="text-left"> <input type="text" class="form-control" name="pallet_qty" id="pallet_qty{{$pallet->mp_id}}" value="{{$pallet->mp_pallet_qty}}"></td>
-                                            <td class="text-left">Size : {{ $pallet->tp_width.'x'.$pallet->tp_length.'x'.$pallet->tp_hieght  }}  W : {{ $pallet->tp_weight }}</td>
-                                            <td class="text-center">
-                                                @if ($pallet->mp_pallet_qty != 0)
-                                                    <h5><button type="button"  class="btn btn-success load_container" {{$pallet->mp_status == 1 ? 'disabled' : ''}}    atr="{{$pallet->mp_pallet_qty}}" atr2="{{$pallet->mp_id}}"   atr3="{{$pallet->mp_qty}}" style="cursor: pointer" ><i class="fas fa-arrow-circle-right"></i></button></h5>
-                                                @else 
-                                                    <h5><p><i class="fas fa-times-circle"></i></p></h5>
-                                                @endif
-                                            </td>
-                                            <input type="hidden" name="pallet_id" id="pallet_id" value="{{$pallet->mp_pallet_qty}}">
-                                        </tr>
-                                        <tr>
-                                           
-                                            {{-- <td class="text-center">{{ ++$i }}</td>
-                                            <td class="text-center">{{ $box->bo_mas_loc }}</td>
-                                            <td class="text-left"> <input type="text" class="form-control" name="pallet_qty" id="pallet_qty" value="{{ $amout_pallet2 }}"></td>
-                                            <td class="text-left">Size : {{ $box->tp_width.'x'.$box->tp_length.'x'.$box->tp_hieght  }}  W : {{ $box->tp_weight }}</td>
-                                            <td class="text-center">
-                                                <input type="checkbox" name="check_box[]" id="check_box" class="check_box"  value="{{ $bo_id_implode }}">
-                                            </td>
-                                            <input type="hidden" name="pallet_id" id="pallet_id" value="{{ $bo_id_implode }}"> --}}
-                                        </tr>
-                                        @php
-                                            $sum_total += $pallet->mp_pallet_qty;
-                                        @endphp
-                                        @endforeach
-                                        <tr>
-                                            <td colspan='2' class="text-center"><b>Total</b></td>
-                                            <td>
+                                            <td colspan='3' class="text-right"><b>จำนวน Pallet </b></td>
+                                            <td  colspan='3'>
                                                 <input type="text" class="form-control" name="total_pallet" id="total_pallet"
-                                                    value="{{ floor($sum_total)}}" readonly></td>
-                                            <td></td>
-                                            <td> </td>
+                                                    value="{{ floor($sum_total)}}" readonly>
+                                            </td>
+                                            <td>Pallet</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan='3' class="text-right"><b>น้ำหนัก Net Weight</b></td>
+                                            <td  colspan='3'>
+                                                <input type="text" class="form-control" name="weight_pallet" id="weight_pallet"
+                                                    value="{{$weight_net}}" readonly>
+                                            </td>
+                                            <td>KK</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -163,53 +176,91 @@ Manual Load Container
                                     <thead>
                                         <tr class="text-center">
                                             <th class="text-center">#</th>
-                                            <th class="text-center">Pallet Q'TY</th>
-                                            <th class="text-center">Pallet No.</th>
-                                            <th class="text-center">Size / Weight</th>
                                             <th class="text-center">Loc</th>
+                                            <th class="text-center">Pallet Q'TY</th>
+                                            <th class="text-center">QTY Item</th>
+                                            <th class="text-center">Size / Weight Pallet</th>
+                                            <th class="text-center">Net Weight</th>
                                             <th class="text-center">Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {{-- {{dd(Session::get('cart'))}}    --}}
                                         @if (Session::get('cart') != null)
-                                            @php
-                                                $sum_total = 0;
-                                                $i = 0;
-                                            @endphp
-
-                                            @foreach (Session::get('cart') as $key => $value)
-                                            @php
-                                                $pallets_de = DB::table('tb_mainpallet')
-                                                            ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
-                                                            ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
-                                                            ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
-                                                            ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name') 
-                                                            ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
-                                                            ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
-                                                            ->groupBy('mp_id')
-                                                            ->where('mp_id',$value['id'])    
-                                                            ->first();
+                                        @php
+                                        $sum_total = 0;
+                                        $i = 0;
+                                        $weight_pallet = 0;
+                                        @endphp
+                                        @foreach (Session::get('cart') as $key => $value)
+                                        @php
+                                            $pallet_diff = 0;
+                                            $pallets_de = DB::table('tb_mainpallet')
+                                                        ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
+                                                        ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
+                                                        ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
+                                                        ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name') 
+                                                        ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
+                                                        ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
+                                                        ->groupBy('mp_id')
+                                                        ->where('mp_id',$value['id'])    
+                                                        ->first();
+                                            
+                                            $pallets_counts = DB::table('tb_mainpallet')
+                                                        ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
+                                                        ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
+                                                        ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
+                                                        ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name') 
+                                                        ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
+                                                        ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
+                                                        ->where('tpl_mp_id',$value['id'])
+                                                        ->get();    
+                                            
+                                                  
+                                            $per_pallet = $pallets_de->mp_qty_main/$pallets_de->mp_pallet_qty_main;
+                                            $sum_pallet_sel = $per_pallet*$value['qty'];
+                                            $weight_per = 0;
+                                            foreach ($pallets_counts as $pallets_count) {
+                                                // $weight_per += ($per_pallet * $value['qty']) * ($pallets_count->sit_netweight / $pallets_count->sit_palletvolume);
+                                    
+                                                if($pallet_diff <= $sum_pallet_sel){
+                                                    if($pallets_count->tpl_qty > $sum_pallet_sel){
+                                                        $pallet_diff += $sum_pallet_sel;
+                                                    }else{
+                                                        if($pallet_diff > $sum_pallet_sel){
+                                                            $pallet_diff +=  ($pallet_diff - $sum_pallet_sel);
+                                                        }else{
+                                                            $pallet_diff += ($pallets_count->tpl_qty);
+                                                        }
+                                                    }
+                                                       
+                                                }
+                                            }
+                                            
+                                            $weight_pallet += $pallets_de->sit_netweight * ($per_pallet * $value['qty']);
+                                          
                                             @endphp
                                             <tr>
                                                 <td class="text-center">{{++$i}}</td>
-                                                <td class="text-center">{{$value['qty']}}</td>
-                                                <td class="text-center"></td>
-                                                <td class="text-center">{{ $pallets_de->tp_width.'x'.$pallets_de->tp_length.'x'.$pallets_de->tp_hieght  }}  W : {{ $pallets_de->tp_weight }}</td>
                                                 <td class="text-center">{{$pallets_de->bo_mas_loc}}</td>
+                                                <td class="text-center">{{$value['qty']}}</td>
+                                                <td class="text-center">{{$per_pallet * $value['qty']}}</td>
+                                                <td class="text-center">{{ $pallets_de->tp_width.'x'.$pallets_de->tp_length.'x'.$pallets_de->tp_hieght  }}  W : {{ $pallets_de->tp_weight }}</td>
+                                             
+                                                <td class="text-center">{{$pallets_de->sit_netweight * ($per_pallet * $value['qty'])}}</td>
                                                 <td class="text-center"><p class="btn btn-danger delete_container" atr="{{$value['id']}}" atr2="{{$key}}"  atr3="{{$value['qty']}}"   atr4="{{$value['item']}}" style="cursor: pointer;color:white;">X</p></td>
                                             </tr>
                                             @php
-                                                $sum_total += $value['qty'];
-                                            
+                                              $sum_total += $value['qty'];
                                             @endphp
                                             @endforeach 
                                         @else 
                                             @php
                                                 $sum_total = 0;
+                                                $weight_pallet = 0;
                                             @endphp
                                             <tr>
-                                                <td colspan="6" class="text-center">ยังไม่มีการเลือก Pallet</td>
+                                                <td colspan="8" class="text-center">ยังไม่มีการเลือก Pallet</td>
                                                 {{-- <td></td>
                                                 <td></td>
                                                 <td></td>
@@ -218,31 +269,72 @@ Manual Load Container
                                         @endif
                                        
                                         <tr>
-                                            <td>Total</td>
-                                            <td><input type="text" name="total" id="total" class="form-control" value="{{$sum_total}}" size="2"
+                                            <td  class="text-right" colspan="5">จำนวน Pallet ที่เตรียมจะ Load</td>
+                                            <td>
+                                                <input type="text" name="total" id="total" class="form-control" value="{{$sum_total}}" size="2"
                                                     maxlength="4" readonly></td>
-                                                <input type="hidden" name="id" id="id" class="form-control" value="{{$id}}" ></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                                <input type="hidden" name="id" id="id" class="form-control" value="{{$id}}" >
+                                                <input type="hidden" name="type" id="type" class="form-control" value="{{$type}}" >
+                                            </td>
+                                            <td>Pallet</td>
                                         </tr>
+                                        <tr>
+                                            <td class="text-right"  colspan="5">น้ำหนัก</td>
+                                            <td><input type="text" name="weight_all" id="weight_all" class="form-control" value="{{$weight_pallet}}" readonly></td>
+                                            <td>KK</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-right"  colspan="5">น้ำหนัก</td>
+                                            <td><input type="text" name="weight_all" id="weight_all" class="form-control" value="{{$weight_pallet / 1000}}" readonly></td>
+                                            <td>ton</td>
+                                        </tr>
+                                       
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div class="col-12 text-right">
-                                <button type="submit" class="btn btn-primary" {{Session::get('cart') != null ? '' : 'disabled'}}>Load Container</button>
-                        </div>
+                       
                     </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="exampleModal2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Preview Manual Load Container</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <div class="show_load"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 @endsection
 @section('js')
 <script>
+
+$(".load_previewmanual").click(function(){
+    var formdata = $("#load_preview").serialize();
+
+    $.ajax({
+        url:"{{ url('preview_manual') }}",
+        type: 'POST',
+        data:formdata,
+    }).done(function(data){
+        $("#exampleModal2").modal();
+        console.log(data);
+        $(".show_load").html(data);
+       
+    });
+});
+
 $("#select_box").click(function(){
     var sel_box = $('.check_box:checked').serialize();
     var token = $("input[name=_token]").val();
@@ -309,10 +401,13 @@ $(".delete_container").click(function(){
             'qty':qty
         }
     }).done(function(data){
+        // console.log(data);
         location.reload();
     });
   
 });
+
+
 
 </script>
 @endsection

@@ -115,7 +115,7 @@ class ContainerController extends Controller
                             ->where('tpl_pd_id',$id)    
                             ->whereNull('mp_status_load')
                             // ->where('mp_pallet_qty','<>',0)    
-                            ->where('mp_qty','<>',0)    
+                            ->where('mp_qty','>',0)    
                             ->get();
 
         $pallets2 = DB::table('tb_mainpallet')

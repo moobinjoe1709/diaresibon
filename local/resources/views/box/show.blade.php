@@ -60,6 +60,8 @@ $active = 'box';
                 @endif
                 <input type="hidden" name="comma_separated" value="{{$comma_separated}}">
                 <input type="hidden" name="id" value="{{$id}}">
+               
+                <div id="showpallet"></div>    
                 <div class="row">
                     <div class="col-12">
                         <div id="showtable"></div>  
@@ -67,7 +69,6 @@ $active = 'box';
                         <input type="hidden" name="id" value="{{$id}}">
                     </div>
                 </div>
-                <div id="showpallet"></div>    
             </div>
         </div>
     </div>
@@ -82,6 +83,7 @@ $active = 'box';
                 url: "{{url('showpallet')}}" ,
                 type: "get",
             }).done(function (data) {
+               
                $("#showpallet").html(data);
             });
         });
@@ -93,6 +95,7 @@ $active = 'box';
                 url: "{{url('showtable')}}/"+ comma_separated + '/' + id,
                 type: "get",
             }).done(function (data) {
+                console.log(data);
                $("#showtable").html(data);
             });
         });

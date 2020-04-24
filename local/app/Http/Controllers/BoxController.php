@@ -465,17 +465,19 @@ class BoxController extends Controller
         }
 
         public function autoload2(Request $request){
-
+ 
         if($request->create_pallet == 1){
           
             $boxs = Boxs::where('bo_id',$request->box_select[0])
                         ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name')
                         ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
                         ->first();
+
+            // dd($request,array_sum($request->box_item) / (int)$boxs->bo_pack_qty,(int)$boxs->bo_pack_qty);
             $mainpallet                         = new Mainpallet();
             $mainpallet->mp_pd_id               = $request->id;
-            $mainpallet->mp_qty                 = array_sum($request->box_item);
-            $mainpallet->mp_qty_main            = array_sum($request->box_item);
+            $mainpallet->mp_qty                 = array_sum($request->box_item) / (int)$boxs->bo_pack_qty;
+            $mainpallet->mp_qty_main            = array_sum($request->box_item) / (int)$boxs->bo_pack_qty;
             $mainpallet->mp_location            = $request->sel_location;
             $mainpallet->mp_weight              = $request->total_weight;
             $mainpallet->mp_pallet_qty          = $request->total_pallet;
@@ -548,6 +550,7 @@ class BoxController extends Controller
 
 
         }else{
+      
             $boxs = Boxs::where('bo_id',$request->box_select[0])
                         ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name')
                         ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')

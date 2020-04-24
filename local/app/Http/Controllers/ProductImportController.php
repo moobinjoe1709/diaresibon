@@ -92,7 +92,6 @@ class ProductImportController extends Controller
                         $products = new Products;
                         $products->pd_ct_id          = Session::get('customer_id');;
                         $products->sales_ccn        = $value['sales_ccn'];
-                        $products->sales_ccn        = $value['sales_ccn'];
                         $products->mas_loc          = $value['mas_loc'];
                         $products->promise_date     = $value['promise_date'];
                         $products->ship_via         = $value['ship_via'];

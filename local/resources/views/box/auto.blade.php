@@ -55,7 +55,7 @@ $active = 'box';
                     <i class="fas fa-check-circle pr5"></i>สำเร็จ!</strong> {!! \Session::get('success') !!}
                 </div>
                 @endif
-                <form action="{{ url('manualload') }}" method="POST" id="add_form_manual">
+                <form method="POST" id="form_loadpreview">
                     @csrf
 
                     <div class="table-responsive">
@@ -76,14 +76,17 @@ $active = 'box';
                                         <input type="text" name="qty_pallet" id="over_qty_palletkk" size="2">
                                         Pallet
                                     </td>
-                                    <td colspan='7'>
+                                    <td colspan='3'>
                                         เลือก Location :
                                         <select name="location" id="location" required oninvalid="this.setCustomValidity('Please Select Location')"
                                             oninput="setCustomValidity('')">
                                             <option value="">----- โปรดเลือก Location -----</option>
-                                            <option value="ROJ">ROJ</option>
-                                            <option value="PIN">PIN</option>
+                                            <option value="1">ROJ</option>
+                                            <option value="2">PIN</option>
                                         </select>
+                                    </td>
+                                    <td colspan="4" class="text-right" >
+                                        <button style="cursor: pointer;" type="button" id="add_box" class="btn btn-primary">Preview Container</button>
                                     </td>
                                 </tr>
                                 <tr>
@@ -122,6 +125,7 @@ $active = 'box';
                                 $count_lock2 = 0;
                                 $count_qty_pallet = 0;
                                 @endphp
+                         
                                 @foreach ($boxs as $key => $box)
                                 
                                 @php
@@ -174,12 +178,13 @@ $active = 'box';
                                         ->groupBy('tpl_id')
                                         // ->distinct('bo_item')
                                         ->where('tpl_pd_id','=',$id)
-                                        ->where('tpl_mp_id',$box->tpl_mp_id)
+                                        ->where('tpl_mp_id',$box->mp_id)
                                         ->where('st_c_id',$box->bo_ct_id)
+                                        ->where('tpl_qty',"<>",0)
                                         // ->orderBy('bo_so','asc')
                                         ->get();
                                 
-                                // dd($boxs2);
+                                // dd ($boxs2,$id,$box->mp_id,$box->bo_ct_id,0);
                                 // $boxs2 = DB::table('tb_boxs')
                                 //         ->select('tb_boxs.*','tb_typepalate.*','tb_subitems.*','tb_items.*','tb_pallet.*')
                                 //         // ->select('tb_boxs.bo_item')
@@ -242,8 +247,9 @@ $active = 'box';
                                             ->groupBy('sit_it_id')
                                             ->get();
 
-                                $total_pallet3 =0;   
-                                $amout_pallet += $box->mp_pallet_qty;       
+                                $total_pallet3 = 0;   
+                                // echo $box->mp_qty/($box->mp_qty_main/$box->mp_pallet_qty_main);
+                                $amout_pallet += ceil($box->mp_qty/($box->mp_qty_main/$box->mp_pallet_qty_main));       
                             
 
                             // echo "<pre>";
@@ -268,8 +274,8 @@ $active = 'box';
                                             {{ $box3->bo_item }} ({{ $box3->bo_revision }})
                                             <br> 
                                             <span class="text-success">  
-                                                {{ floor(($box3->tpl_sum_qty/$box3->bo_pack_qty) /  $box->sit_cartonlayer)  }} ชั้น กับอีก 
-                                                {{  ($box3->tpl_sum_qty/$box3->bo_pack_qty) - floor(($box3->tpl_sum_qty/$box3->bo_pack_qty) / $box->sit_cartonlayer) * $box->sit_cartonlayer  }}    กล่อง  
+                                                {{ floor(($box3->tpl_qty) /  $box->sit_cartonlayer)  }} ชั้น กับอีก 
+                                                {{  ($box3->tpl_qty) - floor(($box3->tpl_qty) / $box->sit_cartonlayer) * $box->sit_cartonlayer  }}    กล่อง  
                                             </span> 
                                         </td>
                                         <td class="text-center">
@@ -288,7 +294,7 @@ $active = 'box';
                                                 <span class="text-success"> [{{  number_format($box->sit_netweight,3,'.',',') }} -  {{  number_format($box->sit_grossweight,3,'.',',')  }}]</span> 
                                             </td>
                                         <td class="text-center">{{ $box3->bo_pack_qty }}</td>
-                                        <td class="text-center">{{ ceil($box3->tpl_qty) }}</td> 
+                                        <td class="text-center">{{ ceil($box3->tpl_qty)  }}</td> 
                                         <td class="text-center">
                                                 @if ($key_check2 == 0)
                                                     {{ "1 - ".ceil($box3->tpl_qty) }}
@@ -324,7 +330,6 @@ $active = 'box';
                                         $key_check += 1;
                                         $count_key++;
                                         $key_check2 += 1;
-                                       
                                     @endphp
                                 @endforeach
                                 <tr>
@@ -336,7 +341,9 @@ $active = 'box';
                                         <td class="text-center">{{ number_format($total_grossweight,2,".",",") }}</td>
                                         <td class="text-center">{{$total_pallet*$box->sit_cbm}}</td>
                                     </tr>
-                                    <input type="hidden" name="pallet_select[]" id="pallet_select[]" value="{{$box->mp_id}}">
+                                    <input type="hidden" name="pallet_select[]" id="pallet_select[]" value="{{$box->mp_status != 1 ? $box->mp_id : '' }}">
+                                    <input type="hidden" name="pallet_qty[]" id="pallet_qty[]" value="{{$box->mp_pallet_qty}}">
+                                    <input type="hidden" name="item_qty[]" id="item_qty[]" value="{{$total_pallet3}}">
                                 @php
                                     $count_qty_pallet += $box->mp_pallet_qty;
                                 @endphp
@@ -350,6 +357,7 @@ $active = 'box';
                                         <input type="hidden" name="weight_total" id="weight_total" value="{{ $total_grossweight2/1000}}">
                                         <input type="hidden" name="id" id="id" value="{{ $id }}">
                                         <input type="hidden" name="amout_pallet" id="amout_pallet" value="{{ $amout_pallet }}">
+                                        <input type="hidden" name="type" id="type" value="{{ $type }}">
                                         {{-- <input type="hidden" name="comma_separated" id="comma_separated" value="{{  $comma_separated }}"> --}}
                                     </td>
                                     <td class="text-center">{{ number_format($total_pallet2,0,".",",")}}</td>
@@ -364,12 +372,7 @@ $active = 'box';
                         </tbody>
                     </table>
                 </div>
-                <div class="row">
-                    <div class="col-12 text-right">
-                           
-                        <button type="submit" id="add_box" class="btn btn-primary"  {{$count_lock2 == $count_lock ? 'disabled' : ''}}>Load Container</button>
-                    </div>
-                </div>
+                
                 </form>
             </div>
         </div>
@@ -433,32 +436,42 @@ $active = 'box';
         </div>
       </div>
 
+      <div class="modal fade" id="exampleModal2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Preview Auto Load Container</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+                <div class="show_load"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
 @endsection
 @section('js')
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.js"></script> 
 <script>
-// $("#add_box").click(function(){
-    // var selec_con = $("#selec_con option:selected").val();
-    // var weight_total = $("#weight_total").val(); 
-    // var over_kk = $("#over_kk").val(); 
-    // var container_weight = parseFloat(selec_con)+(parseFloat(over_kk)/1000);
-    // // alert(weight_total);
-    // // alert(container_weight);
-    // var total = parseFloat(weight_total);
-    // if(selec_con != 0){
-    //     if(total > container_weight){
-    //         swal('น้ำหนักของ Pallet ที่เลือกเกินกำหนด');
-    //         return false;
-    //     }else{
-    //         $("#add_form_manual").submit();
-    //     }
-    // }else{
-    //     swal('กรุณาเลือกประเภท Containner');
-    //     return false;
-    // }
-  
-// });
+$("#add_box").click(function(){
+    var formdata = $('#form_loadpreview').serialize();
+    $.ajax({
+        url:"{{ url('preview_auto') }}",
+        type: 'POST',
+        data:formdata,
+    }).done(function(data){
+        $("#exampleModal2").modal();
+        console.log(data);
+        $(".show_load").html(data);
+       
+    });
+   
+});
+
 $(".lock_pallet").click(function(){
     var id = $(this).attr('atr');
     $.ajax({

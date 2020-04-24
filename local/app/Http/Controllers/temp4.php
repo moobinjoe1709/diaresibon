@@ -380,14 +380,11 @@ class ManualLoadingController extends Controller
 
 
     public function preview_manual(Request $request){
-       $con_size = ($request->container_size * 1000) + $request->weight_over;
-       if($request->pallet_qty_sel != null){
-        $pallet_qty_check = $request->pallet_qty_sel;
-       }else{
-        $pallet_qty_check = ($request->container_size == 20 ? 20 : 40 );
-       }
-      
        
+       $con_qty = $request->con_qty;
+       $con_size = $request->container_size * 1000;
+       $pallet_qty_check = ($request->container_size == 20 ? 20 : 40 );
+       // dd(Session::get('cart'));
        $count_pallet = 0;
        $digi = 0;
       
@@ -494,15 +491,13 @@ class ManualLoadingController extends Controller
                                     if(@$pallet_item_id[$digis][$check_l]['remain'] > @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'] ){
          
                                         @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight']  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
-                                    
+                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']    = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'] -  @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
+                                       
 
                                         @$pallet_item_id[$digis][$check_l]['use']           += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
                                         @$pallet_item_id[$digis][$check_l]['tpl'][$tpl_id]  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
                                         @$pallet_item_id[$digis][$check_l]['remain']                = @$pallet_item_id[$digis][$check_l]['max'] - @$pallet_item_id[$digis][$check_l]['use'];
                                         
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']    = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'] -  @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
-                                       
-
                                         @$pallet_item_id[$digis][$check_l]['status']        .= '2@';
                                         @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= '2@('.@$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'].')';
                                     }else{
@@ -547,7 +542,7 @@ class ManualLoadingController extends Controller
                 }
             }
        }
-    //    dd($pallet_item_id,$mp_id);
+       dd($pallet_item_id,$mp_id);
     
 
       
@@ -597,7 +592,6 @@ class ManualLoadingController extends Controller
                 'pallet_max'    => $pallet_qty_check,
                 // 'pallet_weight'     => [],
                 'pallet_id'     => [],
-                'container_id'  => [],
             );
         }
 
@@ -612,9 +606,9 @@ class ManualLoadingController extends Controller
                             // print_r($pallet_weight[$a][$key]);
                             $container[$c]['use']                          = $container[$c]['use'] + $pallet_weight[$a][$key]['max'];
                             $container[$c]['remain']                       = $container[$c]['max'] - $container[$c]['use'];
-                            // $container[$c]['pallet_id'][]                 =  $pallet_weight[$a][$key]['tpl'];
+                            // $container[$c]['pallet_id'][]                  =  $pallet_weight[$a][$key]['tpl'];
                             $container[$c]['pallet_id'][]                  += $key;
-                            $container[$c]['container_id'][]                += $a;
+                           
                             unset($pallet_weight[$a][$key]);
                             break;
                         }
@@ -628,31 +622,26 @@ class ManualLoadingController extends Controller
        
         
 
-      
+        dd($per_pallet,$pallet_qty,$weight_qty,$pallet_item_id,$container,$pallet_weight);
         // dd(count($container),$container);
 
-        $id                 = $request->id;
-        $type               = $request->type;
-        $container_size     = $request->container_size;
-        $location           = $request->location;
-        $weight_over        = $request->weight_over;
-        $pallet_qty_sel     = $request->pallet_qty_sel;
-        $container_qty      = $count_container+1;
+        // $id                 = $request->id;
+        // $type               = $request->type;
+        // $container_size     = $request->container_size;
+        // $location           = $request->location;
+        // $con_qty           = $request->con_qty;
+    
 
-        $data = array(
-            'id'                => $id,
-            'type'              => $type,
-            'container_size'    => $container_size,
-            'location'          => $location,
-            'pallet_weight'     => $pallet_item_id,
-            'container'         => $container,
-            'weight_over'       => $weight_over,
-            'pallet_qty_sel'    => $pallet_qty_sel,
-            'container_qty'     => $container_qty,
-        );  
-
-        // dd($per_pallet,$pallet_qty,$weight_qty,$pallet_item_id,$container,$pallet_weight);
-        return view('box.preview_manual',$data);
+        // $data = array(
+        //     'id' => $id,
+        //     'type' => $type,
+        //     'container_size' => $container_size,
+        //     'location' => $location,
+        //     'con_qty' => $con_qty,
+        //     'container' => $container,
+        // );  
+        // // dd($data);
+        // return view('box.preview_manual',$data);
     }
 }
 

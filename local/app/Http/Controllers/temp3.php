@@ -380,19 +380,14 @@ class ManualLoadingController extends Controller
 
 
     public function preview_manual(Request $request){
-       $con_size = ($request->container_size * 1000) + $request->weight_over;
-       if($request->pallet_qty_sel != null){
-        $pallet_qty_check = $request->pallet_qty_sel;
-       }else{
-        $pallet_qty_check = ($request->container_size == 20 ? 20 : 40 );
-       }
-      
        
+       $con_qty = $request->con_qty;
+       $con_size = $request->container_size * 1000;
+       $pallet_qty_check = ($request->container_size == 20 ? 20 : 40 );
+       // dd(Session::get('cart'));
        $count_pallet = 0;
        $digi = 0;
-      
        foreach (Session::get('cart') as $key => $value){
-     
            $mainpallet = DB::table('tb_mainpallet')
                        ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
                        ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
@@ -413,246 +408,123 @@ class ManualLoadingController extends Controller
            $per_pallet[$digi]        = $mainpallet->mp_qty_main/$mainpallet->mp_pallet_qty_main; //จำนวน กล่อง ต่อ pallet
            $pallet_qty[$digi]        =  $value['qty'];// จำนวน pallet ต่อ mainpallet
      
-        //    $tpl_id[$digi]            = $mainpallet->mp_id; // id main pallet
+           $tpl_id[$digi]            = $mainpallet->mp_id; // id main pallet
            $weight_qty[$digi]        = $mainpallet->sit_netweight; //น้ำหนักของแต่ละ pallet 
            $pallet_item              = array();
-           $mainpallet_id[$digi]     = $mainpallet->mp_id;//mp_id
-      
-           foreach($pallets as $key => $pallet){
-            $max_weight_per_pallet = 0;
-                $mp_id[$mainpallet->mp_id][$pallet->tpl_id] = array(
-                    'qtybox'        => $pallet->tpl_qty,
-                    'weightbox'     => $pallet->tpl_qty *  $pallet->sit_netweight,
-                    'useweight'     => 0,
-                    'remainweightbox' => $pallet->tpl_qty *  $pallet->sit_netweight,
-                    'statusmp' => "",
-                );
-
-                if($mainpallet->mp_pallet_qty_main == 1){
-                    $max_weight_per_pallet += $mp_id[$mainpallet->mp_id][$pallet->tpl_id]['weightbox'];
-                    $weight_pallet[$digi][$key] = $max_weight_per_pallet;
-                 }else{
-                    $max_weight_per_pallet += $per_pallet[$digi] * $weight_qty[$digi];
-                    $weight_pallet[$digi][0] = $max_weight_per_pallet;
-                 }
-
-            
-
-                // echo $mp_id[$mainpallet->mp_id][$pallet->tpl_id]['weightbox']."<br/>";
-              
-
-           }
-
-           $mp_id_digi[$digi]  = $mainpallet->mp_id;
+           $mp_id[$digi]             = array(
+                'mp_id' => $mainpallet->mp_id,
+                'mp_pallet_qty' => $mainpallet->mp_pallet_qty_main, 
+                'tpl_id' => [
+                    'weight_self' => 0,
+                ], 
+           );
            ++$digi; //นับรวม main pallet ทั้งหมดมีกี่ main pallet
        }
 
-    //    dd($weight_pallet);
+    
        $check_loop = 0;
        for($a=0;$a<$digi;$a++){
-            $max_weight_per_pallet =  array_sum($weight_pallet[$a]);
           for($b=0;$b<$pallet_qty[$a];$b++){
-               $pallet_item[$a][$check_loop] = $per_pallet[$a] * $weight_qty[$a]; //กล่อง * น้ำหนักต่อกล่อง
-               $pallet_item_id[$a][$check_loop] = array(
-                    'max' =>  $max_weight_per_pallet, //น้ำหนักรวมของ pallet แต่ละตัว
-                    'use' => 0, //น้ำหนักที่ใช้ไป
-                    'tpl' => array(), //tpl_id ที่จะมาเก็บ
-                    'remain' =>  $max_weight_per_pallet,
-                    'status' => "",
-               ); 
-
-               
+  
+               $pallet_item[$check_loop] = $per_pallet[$a] * $weight_qty[$a]; //กล่อง * น้ำหนักต่อกล่อง
                $check_loop++;
           }
        }
-
-    //    dd($mp_id,$pallet_item_id);
-
-       foreach($pallet_item_id as $digis => $array1){
-     
-            foreach($array1 as $check_l => $v){
-             
-                foreach($mp_id[$mp_id_digi[$digis]] as $tpl_id =>  $mp){
-                    
-                    if(@$mp['remainweightbox'] > 0 && @$pallet_item_id[$digis][$check_l]['remain'] > 0 ){
-                      
-                        if(@$pallet_item_id[$digis][$check_l]['remain'] >= @$mp['remainweightbox'] ){ //น้ำหนัก pallet มากกว่า น้ำหนักล่อง
-                            if(@$pallet_item_id[$digis][$check_l]['max'] >= @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox']){
-                                @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight']  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'];
-                                @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']    = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'] -  @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
-
-                                @$pallet_item_id[$digis][$check_l]['use']           += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'];
-                                @$pallet_item_id[$digis][$check_l]['tpl'][$tpl_id]  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'];
-                                @$pallet_item_id[$digis][$check_l]['remain']        = @$pallet_item_id[$digis][$check_l]['max'] - @$pallet_item_id[$digis][$check_l]['use'];
-                               
-                                @$pallet_item_id[$digis][$check_l]['status']    .= 1;
-                                @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= 1;
-                            }else{
-                                if(@$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'] <= 0){
-                                    continue;
-                                }
-                                    if(@$pallet_item_id[$digis][$check_l]['remain'] > @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'] ){
-         
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight']  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
-                                    
-
-                                        @$pallet_item_id[$digis][$check_l]['use']           += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
-                                        @$pallet_item_id[$digis][$check_l]['tpl'][$tpl_id]  += @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'];
-                                        @$pallet_item_id[$digis][$check_l]['remain']                = @$pallet_item_id[$digis][$check_l]['max'] - @$pallet_item_id[$digis][$check_l]['use'];
-                                        
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']    = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox'] -  @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
-                                       
-
-                                        @$pallet_item_id[$digis][$check_l]['status']        .= '2@';
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= '2@('.@$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox'].')';
-                                    }else{
-                                        @$pallet_item_id[$digis][$check_l]['status']    .= '2#';
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= '2#(0)';
-                                    }   
-                            }
-
-                        }else{
-                            if(@$pallet_item_id[$digis][$check_l]['use'] <= @$pallet_item_id[$digis][$check_l]['max'] ){ 
-                                if(@$pallet_item_id[$digis][$check_l]['remain'] >= @$pallet_item_id[$digis][$check_l]['max'] ){
-                                    @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight']           += @$pallet_item_id[$digis][$check_l]['max'];
-                                    @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']     = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox']- @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
-
-                                    @$pallet_item_id[$digis][$check_l]['use']                   += @$pallet_item_id[$digis][$check_l]['max'];
-                                    @$pallet_item_id[$digis][$check_l]['tpl'][$tpl_id]          += @$pallet_item_id[$digis][$check_l]['max'];
-                                    @$pallet_item_id[$digis][$check_l]['remain']                = @$pallet_item_id[$digis][$check_l]['max'] - @$pallet_item_id[$digis][$check_l]['use'];
-
-                                    @$pallet_item_id[$digis][$check_l]['status']    .= "3@";
-                                    @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= '3@('.@$pallet_item_id[$digis][$check_l]['max'].')';
-                                }else{
-                                    if(@$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']     >= @$pallet_item_id[$digis][$check_l]['remain']){
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight']           += @$pallet_item_id[$digis][$check_l]['remain'];
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['remainweightbox']     = @$mp_id[$mp_id_digi[$digis]][$tpl_id]['weightbox']- @$mp_id[$mp_id_digi[$digis]][$tpl_id]['useweight'];
-
-                                        @$pallet_item_id[$digis][$check_l]['use']                   += @$pallet_item_id[$digis][$check_l]['remain'];
-                                        @$pallet_item_id[$digis][$check_l]['tpl'][$tpl_id]          += @$pallet_item_id[$digis][$check_l]['remain'];
-                                        @$pallet_item_id[$digis][$check_l]['remain']                = @$pallet_item_id[$digis][$check_l]['max'] - @$pallet_item_id[$digis][$check_l]['use'];
-                                        
-                                        @$pallet_item_id[$digis][$check_l]['status']    .= "3#";
-                                        @$mp_id[$mp_id_digi[$digis]][$tpl_id]['statusmp'] .= '3#('.@$pallet_item_id[$digis][$check_l]['remain'].')';
-                                    }
-                                       
-                                }
-                               
-                            }else{
-
-                            }
-                           
-                        }
-                    }
-                }
-            }
-       }
-    //    dd($pallet_item_id,$mp_id);
-    
-
-      
     //    dd($per_pallet,$pallet_qty,$weight_qty,$pallet_item,$mp_id,count($pallet_item));
-        
+
         $pallet = $check_loop;
-        $pallet_weight = $pallet_item_id;
-      
+        $pallet_weight = $pallet_item;
+ 
         $container = array();    
 
-        $container2 = array(
-            'max'           => $con_size,
-            'use'           => 0,
-            'remain'        => $con_size,
-            'pallet_max'    => $pallet_qty_check,
-            'pallet_id'     => [],
-        );
+        // $container2 = array(
+        //     'max'           => $con_size,
+        //     'use'           => 0,
+        //     'remain'        => $con_size,
+        //     'pallet_max'    => $pallet_qty_check,
+        //     'pallet_id'     => [],
+        // );
+
+        // $count_container = 0;
+        // foreach($pallet_weight as $key => $val){
+
+        //     echo $key." ::".$container2['remain']." > ".$pallet_weight[$key]." && ".count($container2['pallet_id'])." < ".$container2['pallet_max']."<br/>";
+        //     if($container2['remain'] > $pallet_weight[$key] && count($container2['pallet_id']) < $container2['pallet_max']){
+        //         $container2['use']                          = $container2['use'] + $pallet_weight[$key];
+        //         $container2['remain']                       = $container2['max'] - $container2['use'];
+
+        //         $container2['pallet_id'][]                  += $key;
+        //     }else{
+        //         ++$count_container;
+        //         $container2 = array(
+        //             'max'           => $con_size,
+        //             'use'           => 0,
+        //             'remain'        => $con_size,
+        //             'pallet_max'    => $pallet_qty_check,
+        //             'pallet_id'     => [],
+        //         );
+        //     }
+        // }
+
+        // echo $count_container;
 
 
-        $count_container = 0;
-        for($a=0;$a<$digi;$a++){
-            foreach($pallet_weight[$a] as $key => $val){
-                if($container2['remain'] > $pallet_weight[$a][$key]['max'] && count($container2['pallet_id']) < $container2['pallet_max']){
-                    $container2['use']                          = $container2['use'] + $pallet_weight[$a][$key]['max'];
-                    $container2['remain']                       = $container2['max'] - $container2['use'];
-                    $container2['pallet_id'][]                  += $key;
-                }else{
-                    ++$count_container;
-                    $container2 = array(
-                        'max'           => $con_size,
-                        'use'           => 0,
-                        'remain'        => $con_size,
-                        'pallet_max'    => $pallet_qty_check,
-                        'pallet_id'     => [],
-                    );
-                }
-            }
-        }
-
-       
-
-        for($i=1;$i<=$count_container+1;$i++){
+        for($i=1;$i<=999;$i++){
             $container[$i] = array(
                 'max'           => $con_size,
                 'use'           => 0,
                 'remain'        => $con_size,
                 'pallet_max'    => $pallet_qty_check,
-                // 'pallet_weight'     => [],
                 'pallet_id'     => [],
-                'container_id'  => [],
             );
         }
 
      
-      
-        for($a=0;$a<$digi;$a++){
-              foreach($pallet_weight[$a] as $key => $val){
-                for($c=1;$c<=count($container);$c++){
-
-                        if($container[$c]['remain'] > $pallet_weight[$a][$key]['max'] && count($container[$c]['pallet_id']) < $container[$c]['pallet_max']){
-                            // echo "<pre>";
-                            // print_r($pallet_weight[$a][$key]);
-                            $container[$c]['use']                          = $container[$c]['use'] + $pallet_weight[$a][$key]['max'];
-                            $container[$c]['remain']                       = $container[$c]['max'] - $container[$c]['use'];
-                            // $container[$c]['pallet_id'][]                 =  $pallet_weight[$a][$key]['tpl'];
-                            $container[$c]['pallet_id'][]                  += $key;
-                            $container[$c]['container_id'][]                += $a;
-                            unset($pallet_weight[$a][$key]);
-                            break;
-                        }
-                }
+        foreach($pallet_weight as $key => $val){
+            for($c=1;$c<=count($container);$c++){
+                    if($container[$c]['remain'] > $pallet_weight[$key] && count($container[$c]['pallet_id']) < $container[$c]['pallet_max']){
+                        $container[$c]['use']                          = $container[$c]['use'] + $pallet_weight[$key];
+                        $container[$c]['remain']                       = $container[$c]['max'] - $container[$c]['use'];
+                        $container[$c]['pallet_id'][]                  += $key;
+                        unset($pallet_weight[$key]);
+                        break;
+                    }
             }
-
-            
         }
 
-       
-       
-        
 
+        $lap  = "";
+        for($c=1;$c<=count($container);$c++){
+            if(count($container[$c]['pallet_id']) <= 0){
+                    $lap .= $c.",";
+            }
+        }   
       
-        // dd(count($container),$container);
+        foreach(explode(",",$lap) as $value){
+            unset($container[$value]);
+        }
 
-        $id                 = $request->id;
-        $type               = $request->type;
-        $container_size     = $request->container_size;
-        $location           = $request->location;
-        $weight_over        = $request->weight_over;
-        $pallet_qty_sel     = $request->pallet_qty_sel;
-        $container_qty      = $count_container+1;
+        
+        // dd($key,$per_pallet,$pallet_qty,$weight_qty,$pallet_item,$check_loop,$container,$pallet_weight);
+        dd(count($container),$container);
 
-        $data = array(
-            'id'                => $id,
-            'type'              => $type,
-            'container_size'    => $container_size,
-            'location'          => $location,
-            'pallet_weight'     => $pallet_item_id,
-            'container'         => $container,
-            'weight_over'       => $weight_over,
-            'pallet_qty_sel'    => $pallet_qty_sel,
-            'container_qty'     => $container_qty,
-        );  
+        // $id                 = $request->id;
+        // $type               = $request->type;
+        // $container_size     = $request->container_size;
+        // $location           = $request->location;
+        // $con_qty           = $request->con_qty;
+    
 
-        // dd($per_pallet,$pallet_qty,$weight_qty,$pallet_item_id,$container,$pallet_weight);
-        return view('box.preview_manual',$data);
+        // $data = array(
+        //     'id' => $id,
+        //     'type' => $type,
+        //     'container_size' => $container_size,
+        //     'location' => $location,
+        //     'con_qty' => $con_qty,
+        //     'container' => $container,
+        // );  
+        // // dd($data);
+        // return view('box.preview_manual',$data);
     }
 }
 

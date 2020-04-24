@@ -262,15 +262,13 @@ $active = 'box';
                                         value="{{ $box3->bo_order_qty_sum }}">
 
                                     @php
-                                    $height_pallet[] = ($boxs4[0]->sit_cartonheigh *
-                                    $boxs4[0]->sit_cartonperlayer ) + $boxs4[0]->tp_hieght;
-                                    $total_pallet += ceil($box3->bo_order_qty_sum/$box3->bo_pack_qty);
-                                    $total_sum_box += $box3->bo_order_qty_sum;
-                                    $total_netweight +=
-                                    ($box3->bo_order_qty_sum/$box3->bo_pack_qty)*$boxs4[0]->sit_netweight;
-                                    $total_grossweight +=($box3->bo_order_qty_sum/$box3->bo_pack_qty)*$boxs4[0]->sit_grossweight+($amout_pallet*$boxs4[0]->tp_weight);
-                                    $total_cbm += $boxs4[0]->sit_cbm * ($box3->bo_order_qty_sum/$box3->bo_pack_qty);
-                                    $key_check += 1;
+                                    $height_pallet[]        = ($boxs4[0]->sit_cartonheigh * $boxs4[0]->sit_cartonperlayer ) + $boxs4[0]->tp_hieght;
+                                    $total_pallet           += ceil($box3->bo_order_qty_sum/$box3->bo_pack_qty);
+                                    $total_sum_box          += $box3->bo_order_qty_sum;
+                                    $total_netweight        += ($box3->bo_order_qty_sum/$box3->bo_pack_qty)*$boxs4[0]->sit_netweight;
+                                    $total_grossweight      += ($box3->bo_order_qty_sum/$box3->bo_pack_qty)*$boxs4[0]->sit_grossweight+($amout_pallet*$boxs4[0]->tp_weight);
+                                    $total_cbm              += $boxs4[0]->sit_cbm * ($box3->bo_order_qty_sum/$box3->bo_pack_qty);
+                                    $key_check              += 1;
                                     @endphp
                                 </tr>
                                 @endforeach
@@ -327,7 +325,7 @@ $active = 'box';
                                 <input type="hidden" name="total_sum_box" id="total_sum_box"
                                     value="{{ $total_pallet }}">
                                 <input type="hidden" name="total_weight" id="total_weight"
-                                    value="{{ $total_grossweight }}">
+                                    value="{{ $total_netweight }}">
 
                                 <button type="button" class="btn btn-primary send_value"
                                     {{ floor($total_pallet / ($boxs4[0]->sit_cartonperlayer*$boxs4[0]->sit_cartonlayer)) <= 0 ? 'disabled' : '' }}>Load
@@ -580,7 +578,7 @@ $active = 'box';
                                 <input type="hidden" name="total_sum_box" id="total_sum_box"
                                     value="{{ $total_pallet }}">
                                 <input type="hidden" name="total_weight" id="total_weight"
-                                    value="{{ $total_grossweight }}">
+                                    value="{{ $total_netweight }}">
                                
                                     
                             </div>

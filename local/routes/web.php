@@ -68,13 +68,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('select_box','AutoLoadingController@select_box');
         Route::post('load_container','AutoLoadingController@load_container');
         Route::post('delete_container','AutoLoadingController@delete_container');
-        
+        Route::post('preview_auto','AutoLoadingController@preview_auto');
+
         //ManualLoading
         Route::resource('manualload','ManualLoadingController');
         Route::get('show_pallet/{id}','ManualLoadingController@show');
         Route::post('delete_pallet','ManualLoadingController@delete_pallet');
         Route::post('delete_box','ManualLoadingController@delete_box');
         Route::post('change_box','ManualLoadingController@change_box');
+        Route::post('preview_manual','ManualLoadingController@preview_manual');
 
         //OutStandardLoading
         Route::resource('outstandardload','OutStandardLoadingController');
@@ -98,7 +100,6 @@ Route::middleware(['auth'])->group(function () {
 //member
 // Route::post('checklogin','auth\LoginController@checklogin')->name('login2');
 Route::post('regismember','auth\RegisterController@store')->name('regismember');
-
 
 
 Auth::routes();

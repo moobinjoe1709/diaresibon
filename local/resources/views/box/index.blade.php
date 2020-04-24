@@ -30,7 +30,8 @@
                     <i class="fas fa-check-circle pr5"></i>สำเร็จ!</strong> {!! \Session::get('success') !!}
                 </div>
                 @endif
-                <table class="table table-bordered table-hover table-striped" id="product1">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-striped" id="product1">
                         <thead>
                             <tr class="text-center">
                                 <th class="text-center" width="5%">#</th>
@@ -63,7 +64,8 @@
                             </tr>
                             @endforeach
                         </tbody>
-                    </table>
+                </table>
+                </div>
             </div>
         </div>
     </div>
