@@ -22,28 +22,29 @@
                     </div>
                     <br>
                 @endif
-                <form action="{{url('manaulload')}}" method="post">
+                <form action="{{url('manualload')}}" method="post">
                     @csrf
+                    <input type="hidden" name="id" value="{{$id}}">
                     <div class="row">
                         <div class="col-md-3 col-12">
-                            <select name="container_size" id="container_size" class="form-control" required>
+                            <select name="container_size" id="container_size" class="form-control" readonly required>
                                 <option value="">------- โปรดเลือกขนาดตู้คอนเทรนเนอร์ --------</option>
                                 <option value="20" {{$container_size == 20 ? 'selected' : ''}}>20 ตัน</option>
                                 <option value="40" {{$container_size == 40 ? 'selected' : ''}}>40 ตัน</option>
                             </select>
                         </div>
                         <div class="col-md-3 col-12">
-                            <select name="location" id="location" class="form-control" required>
+                            <select name="location" id="location" class="form-control" readonly required>
                                 <option value="">------- โปรดเลือกสาขาที่ขึ้นตู้ --------</option>
                                 <option value="1" {{$location == 1 ? 'selected' : ''}}>ROJ</option>
                                 <option value="2" {{$location == 2 ? 'selected' : ''}}>PIN</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-12">
-                            <input type="text" name="weight_over" id="weight_over" class="form-control" placeholder="+- น้ำหนักส่วนเกิน" value="{{$weight_over}}">
+                            <input type="text" name="weight_over" id="weight_over" class="form-control" placeholder="+- น้ำหนักส่วนเกิน" value="{{$weight_over}}" readonly>
                         </div>
                         <div class="col-md-2 col-12">
-                            <input type="text" name="pallet_qty_sel" id="pallet_qty_sel" class="form-control" placeholder="จำนวน Pallet"  value="{{$pallet_qty_sel}}">
+                            <input type="text" name="pallet_qty_sel" id="pallet_qty_sel" class="form-control" placeholder="จำนวน Pallet"  value="{{$pallet_qty_sel}}" readonly>
                         </div>
                         <div class="col-md-2 text-right">
                             <button type="submit" class="btn btn-primary" {{Session::get('cart') != null ? '' : 'disabled'}}>Load Container</button>
@@ -52,8 +53,11 @@
                     <hr>
                     <div class="col-md-12 col-12">
                         <div class="table-responsive">
-                            {{-- {{dd($container,$pallet_weight)}} --}}
+                            
+                           
                             @foreach ($container as $key => $val)
+                            {{-- {{ print_r($val['pallet_id'])}} --}}
+                            {{-- {{dd($container,$pallet_weight)}} --}}
                             <div class="row">
                                 <div class="col-6 text-left">
                                     <b>Container  No :  </b>   {{$key}} ( Pallet : {{count($val['pallet_id'])}} ea)
@@ -63,7 +67,7 @@
                                 </div>
 
                                 <div class="col-6 text-right">
-                                    <b>Date load :  </b>  {{date("Y-m-d")}}
+                                    <b>Date load :  </b>  {{thai_date_fullmonth2(date("Y-m-d"))}}
                                 </div>
                             </div>
                             <table class="table table-bordered table-hover" id="product1">
@@ -89,6 +93,7 @@
                                         $qty_item_all           = 0; //จำนวนชิ้น รวมทั้งหมด
                                         $netweight_sum_all      = 0; //netweight รวมทั้งหมด
                                         $grossweight_sum_all    = 0; //grossweight รวมทั้งหมด
+                                       
                                     @endphp
                                     @foreach ($val['pallet_id'] as $no => $item)
                                     @php
@@ -102,6 +107,9 @@
                                          $qty_item              = 0; //จำนวนชิ้น รวมต่อpalet
                                          $netweight_sum         = 0; //netweight รวมต่อpalet
                                          $grossweight_sum       = 0; //grossweight รวมต่อpalet
+                                        //  echo $no;
+                                        //  echo "<pre>";
+                                        //  print_r($array);
                                     @endphp
                                        
                                         @foreach ($array as $key => $value) 
@@ -148,9 +156,9 @@
                                             </tr>
                                             @php
                                                 ++$check_lap2;
-                                                $qty_box            += ceil($value / $mainpallet->sit_netweight); //จำนวน กล่อง รวม
-                                                $qty_item           +=  ceil($pallet->bo_pack_qty *($value / $mainpallet->sit_netweight)); //จำนวน ชิ้น รวม
-                                                $netweight_sum      +=     $value; //netweightรวม
+                                                $qty_box            +=  $value / $mainpallet->sit_netweight; //จำนวน กล่อง รวม
+                                                $qty_item           +=  ($pallet->bo_pack_qty *($value / $mainpallet->sit_netweight)); //จำนวน ชิ้น รวม
+                                                $netweight_sum      +=     ($value / $mainpallet->sit_netweight) * $mainpallet->sit_netweight; //netweightรวม
                                                 $grossweight_sum    += ($value / $mainpallet->sit_netweight) *  $mainpallet->sit_grossweight ; //grossweight รวม
                                             @endphp
                                         @endforeach
@@ -162,7 +170,7 @@
                                                     <td></td>
                                                     <td></td>
                                                     <td class="text-center"></td>
-                                                    <td class="text-center">{{$qty_box}}</td>
+                                                    <td class="text-center">{{ceil($qty_box)}}</td>
                                                     <td class="text-center">{{$qty_item}}</td>
                                                     <td class="text-center">{{$netweight_sum}}</td>
                                                     <td class="text-center">{{$grossweight_sum}}</td>
@@ -176,6 +184,7 @@
                                             $qty_box_all            += $qty_box; //จำนวนกล่อง รวมทั้งหมด
                                             $qty_item_all           += $qty_item; //จำนวนชิ้น รวมทั้งหมด
                                             $netweight_sum_all      += $netweight_sum; //netweight รวมทั้งหมด
+                                            // echo $netweight_sum."<br/>";
                                             $grossweight_sum_all    += $grossweight_sum; //grossweight รวมทั้งหมด
                                         @endphp
                                     @endforeach
@@ -190,7 +199,7 @@
                                         <td></td>
                                         <td></td>
                                         <td class="text-center">Total</td>
-                                        <td class="text-center">{{$qty_box_all}}</td>
+                                        <td class="text-center">{{ceil($qty_box_all)}}</td>
                                         <td class="text-center">{{$qty_item_all}}</td>
                                         <td class="text-center">{{$netweight_sum_all}}</td>
                                         <td class="text-center">{{$grossweight_sum_all}}</td>
@@ -281,3 +290,4 @@ $(".delete_container").click(function(){
 });
 
 </script>
+

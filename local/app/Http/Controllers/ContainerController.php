@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Pallets;
 use DB;
+use Session;
 class ContainerController extends Controller
 {
     /**
@@ -94,6 +95,8 @@ class ContainerController extends Controller
     }
 
     public function LoadContianer($id,$type){
+        Session::forget('container');
+        Session::forget('pallet_weight');
         // $pallets = DB::table('tb_pallet')
         //                     ->select('tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
         //                     ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')

@@ -23,6 +23,9 @@ Auto Load container
 .fa-lock{
     cursor: pointer;
 }
+label{
+    font-weight: bold;
+}
 </style>
 @php
 $active = 'box';
@@ -57,11 +60,46 @@ $active = 'box';
                 @endif
                 <form method="POST" id="form_loadpreview">
                     @csrf
-
+                    <div class="row">
+                        <div class="col-md-4 col-12">
+                            <label for="selec_con">เลือก Container :</label>
+                            <select name="selec_con" class="form-control" id="selec_con" required>
+                                <option value="">----- โปรดเลือก Container -----</option>
+                                <option value="20">Container 20 ตัน</option>
+                                <option value="40">Container 40 ตัน</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-12">
+                            <label for="location"> Location </label>
+                            <select name="location" id="location" class="form-control" required>
+                                <option value="">----- โปรดเลือก Location -----</option>
+                                <option value="1">ROJ</option>
+                                <option value="2">PIN</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-12">
+                            <label for="over_kk"> + - น้ำหนักไม่เกิน (KK.)</label>
+                            <input type="text" name="over_kk" class="form-control" id="over_kk" placeholder="KK."> 
+                      
+                        </div>
+                        <div class="col-md-2 col-12">
+                            <label for="qty_pallet"> จำนวน Pallet </label>
+                            <input type="text" name="qty_pallet" class="form-control"  id="qty_pallet" size="2" placeholder="Pallet">
+                            
+                        </div>
+                      
+                    </div>
+                    <br>
+                    <div class="row">
+                        <div class="col-12 text-right">
+                            <button style="cursor: pointer;" type="button" id="add_box" class="btn btn-primary">Preview Container</button>
+                        </div>
+                    </div>
+                    <br>
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover" id="product1">
                             <thead>
-                                <tr>
+                                {{-- <tr>
                                     <td colspan='7'>
                                         เลือก Container :
                                         <select name="selec_con" id="selec_con" required oninvalid="this.setCustomValidity('Please Select Container')"
@@ -91,7 +129,7 @@ $active = 'box';
                                 </tr>
                                 <tr>
                                     <td class="text-center" colspan='14'></td>
-                                </tr>
+                                </tr> --}}
                                 <tr class="text-center"  style="background-color:#8b7eef ;color:white;">
                                     <th class="text-center">#</th>
                                     <th class="text-center">Pallet QTY</th>

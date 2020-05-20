@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use DB;
 use Session;
 use App\Boxs;
 use App\Pallets;
 use App\Mainpallet;
 use App\Container;
 use App\ContainerDetial;
-use DB;
+
 class AutoLoadingController extends Controller
 {
     /**
@@ -40,158 +41,189 @@ class AutoLoadingController extends Controller
      */
     public function store(Request $request)
     {
-
-       dd($request);
-       
-        $count_pallet = 0;
-        $count_container = Container::whereRaw('ctn_number = (select max(`ctn_number`) from tb_containers)')->first();
-
-     
-        if($count_container == null){
-            $max_container_num = 1;
-        }else{
-            $max_container_num = $count_container->ctn_number + 1;
+        
+        // dd($request,Session::get('container'),Session::get('pallet_weight'),Session::get('mainpallet'));
+        
+        foreach(Session::get('mainpallet') as $key => $item){
+            $mainpallet = Mainpallet::find($item);
+            $mainpallet->mp_qty         = 0;
+            $mainpallet->mp_pallet_qty  = 0;
+            $mainpallet->save();
         }
 
-        $weight_con =  ($request->selec_con * 1000); //น้ำหนัก Container
-        $weight_diff = $weight_con + $request->over_kk; //น้ำหนัก Container รวมกับ +- 
-        $pallet_qty = ($request->qty_pallet == null ? 0 : $request->qty_pallet ); //จำนวน pallet ที่กำหนด
+        foreach(Session::get('container') as $key => $val){
+            $im_pallet      = implode(',',$val['pallet_id']);
+            $im_container   = implode(',',$val['container_id']);
+            $container = new Container;
+            $container->ctn_pd_id       = $request->id;
+            $container->ctn_size        = $request->selec_con;
+            $container->ctn_location    = $request->location;
+            $container->ctn_over_kk     = $request->over_kk;
+            $container->ctn_number      = $key;
+            $container->ctn_use         = $val['use'];
+            $container->ctn_remain      = $val['remain'];
+            $container->ctn_date        = now();
+            $container->pallet_id       = $im_pallet;
+            $container->container_id    = $im_container;
+            $container->save();
+        }
 
-        $weight_all = 0; //น้ำหนักเริ่มต้น
-        $pallet_cal = 0;
+        Session::forget('container');
+        Session::forget('pallet_weight');
+        Session::forget('cart');
+        return redirect()->back()->with('success','Load Paller ขึ้น Container เรียบร้อย!!');
+
+    //    dd($request,Session::all());
+       
+        // $count_pallet = 0;
+        // $count_container = Container::whereRaw('ctn_number = (select max(`ctn_number`) from tb_containers)')->first();
+
      
-        $container = new Container;
-        $container->ctn_type        = $request->container_size;
-        $container->ctn_location    = $request->location;
-        $container->ctn_pd_id       = $request->id;
-        $container->ctn_over_kk     = $request->over_kk;
-        $container->ctn_number      = $max_container_num;
-        $container->ctn_date        = Date('Y-m-d');
-        $container->save();
+        // if($count_container == null){
+        //     $max_container_num = 1;
+        // }else{
+        //     $max_container_num = $count_container->ctn_number + 1;
+        // }
 
-        foreach($request->pallet_select as $item){
-            $mainpallet = Mainpallet::where('mp_id','=',$item)->where('mp_status','<>',1)->where('mp_type_load','<>',1)->first();
-            if($mainpallet != null){
-                $pallets = Pallets::where('tpl_mp_id','=',$mainpallet->mp_id)->get();
-                $sum_pallet = 0;
-                foreach($pallets as $pallet){
-                    $box = Boxs::leftjoin('tb_items','tb_items.it_name','=','tb_boxs.bo_item')
-                                ->leftjoin('tb_subitems','tb_subitems.sit_it_id','=','tb_items.it_id')
-                                ->where('bo_id',$pallet->tpl_bo_id)
-                                ->first();
+        // $weight_con =  ($request->selec_con * 1000); //น้ำหนัก Container
+        // $weight_diff = $weight_con + $request->over_kk; //น้ำหนัก Container รวมกับ +- 
+        // $pallet_qty = ($request->qty_pallet == null ? 0 : $request->qty_pallet ); //จำนวน pallet ที่กำหนด
 
-                    if($request->over_kk == null && $request->qty_pallet == null){
-                        if($weight_all <= $weight_con){
-                            if($pallet->tpl_qty != 0){
-                                $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
-                                $containerdetial = new ContainerDetial();
-                                $containerdetial->ctnd_ctn_id       = $container->ctn_id;
-                                $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
-                                $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
-                                $containerdetial->remark            = "";
-                                $containerdetial->save();  
+        // $weight_all = 0; //น้ำหนักเริ่มต้น
+        // $pallet_cal = 0;
+     
+        // $container = new Container;
+        // $container->ctn_type        = $request->container_size;
+        // $container->ctn_location    = $request->location;
+        // $container->ctn_pd_id       = $request->id;
+        // $container->ctn_over_kk     = $request->over_kk;
+        // $container->ctn_number      = $max_container_num;
+        // $container->ctn_date        = Date('Y-m-d');
+        // $container->save();
 
-                                $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
-                                $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
-                                $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
-                                    'tpl_qty' => $cal_pallet
-                                ]);
+        // foreach($request->pallet_select as $item){
+        //     $mainpallet = Mainpallet::where('mp_id','=',$item)->where('mp_status','<>',1)->where('mp_type_load','<>',1)->first();
+        //     if($mainpallet != null){
+        //         $pallets = Pallets::where('tpl_mp_id','=',$mainpallet->mp_id)->get();
+        //         $sum_pallet = 0;
+        //         foreach($pallets as $pallet){
+        //             $box = Boxs::leftjoin('tb_items','tb_items.it_name','=','tb_boxs.bo_item')
+        //                         ->leftjoin('tb_subitems','tb_subitems.sit_it_id','=','tb_items.it_id')
+        //                         ->where('bo_id',$pallet->tpl_bo_id)
+        //                         ->first();
 
-                                $sum_pallet += $pallet->tpl_qty;
-                                $status = 1;
-                                $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
-                                    'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
-                                ]);
+        //             if($request->over_kk == null && $request->qty_pallet == null){
+        //                 if($weight_all <= $weight_con){
+        //                     if($pallet->tpl_qty != 0){
+        //                         $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
+        //                         $containerdetial = new ContainerDetial();
+        //                         $containerdetial->ctnd_ctn_id       = $container->ctn_id;
+        //                         $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
+        //                         $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
+        //                         $containerdetial->remark            = "";
+        //                         $containerdetial->save();  
+
+        //                         $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
+        //                         $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
+        //                         $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
+        //                             'tpl_qty' => $cal_pallet
+        //                         ]);
+
+        //                         $sum_pallet += $pallet->tpl_qty;
+        //                         $status = 1;
+        //                         $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
+        //                             'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
+        //                         ]);
                               
-                            }
-                        }
-                    }            
+        //                     }
+        //                 }
+        //             }            
 
-                    if($request->over_kk != null && $request->qty_pallet == null){
-                        if($weight_all <= $weight_diff){
-                            if($pallet->tpl_qty != 0){
-                                $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
-                                $containerdetial = new ContainerDetial();
-                                $containerdetial->ctnd_ctn_id       = $container->ctn_id;
-                                $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
-                                $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
-                                $containerdetial->remark            = "";
-                                $containerdetial->save();  
+        //             if($request->over_kk != null && $request->qty_pallet == null){
+        //                 if($weight_all <= $weight_diff){
+        //                     if($pallet->tpl_qty != 0){
+        //                         $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
+        //                         $containerdetial = new ContainerDetial();
+        //                         $containerdetial->ctnd_ctn_id       = $container->ctn_id;
+        //                         $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
+        //                         $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
+        //                         $containerdetial->remark            = "";
+        //                         $containerdetial->save();  
 
-                                $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
-                                $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
-                                $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
-                                    'tpl_qty' => $cal_pallet
-                                ]);
+        //                         $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
+        //                         $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
+        //                         $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
+        //                             'tpl_qty' => $cal_pallet
+        //                         ]);
 
-                                $sum_pallet += $pallet->tpl_qty;
-                                $status = 1;
-                                $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
-                                    'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
-                                ]);
+        //                         $sum_pallet += $pallet->tpl_qty;
+        //                         $status = 1;
+        //                         $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
+        //                             'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
+        //                         ]);
                               
-                            }
-                        }
-                    }
+        //                     }
+        //                 }
+        //             }
                    
-                    if($request->over_kk == null && $request->qty_pallet != null){
-                          if($pallet_cal <= $pallet_qty){
-                            if($pallet->tpl_qty != 0){
-                                $pallet_cal += $pallet->tpl_qty/$box->sit_palletvolume;
-                                $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
+        //             if($request->over_kk == null && $request->qty_pallet != null){
+        //                   if($pallet_cal <= $pallet_qty){
+        //                     if($pallet->tpl_qty != 0){
+        //                         $pallet_cal += $pallet->tpl_qty/$box->sit_palletvolume;
+        //                         $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
 
-                                $containerdetial = new ContainerDetial();
-                                $containerdetial->ctnd_ctn_id       = $container->ctn_id;
-                                $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
-                                $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
-                                $containerdetial->remark            = "";
-                                $containerdetial->save();  
+        //                         $containerdetial = new ContainerDetial();
+        //                         $containerdetial->ctnd_ctn_id       = $container->ctn_id;
+        //                         $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
+        //                         $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
+        //                         $containerdetial->remark            = "";
+        //                         $containerdetial->save();  
 
-                                $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
-                                $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
-                                $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
-                                    'tpl_qty' => $cal_pallet
-                                ]);
+        //                         $pallet2 =  DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->first();
+        //                         $cal_pallet =   $pallet2->tpl_qty - $pallet->tpl_qty;
+        //                         $pallet3 = DB::table('tb_pallet')->where('tpl_id', $pallet->tpl_id)->update([
+        //                             'tpl_qty' => $cal_pallet
+        //                         ]);
 
-                                $sum_pallet += $pallet->tpl_qty;
-                                $status = 2;
-                                $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
-                                    'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
-                                ]);
+        //                         $sum_pallet += $pallet->tpl_qty;
+        //                         $status = 2;
+        //                         $main = DB::table('tb_mainpallet')->where('mp_id',$mainpallet->mp_id)->update([
+        //                             'mp_qty' => $mainpallet->mp_qty - $sum_pallet,
+        //                         ]);
                               
-                            }
+        //                     }
                            
 
-                          }
-                      }
+        //                   }
+        //               }
 
-                    if($request->over_kk != null && $request->qty_pallet != null){
-                        if($weight_all <= $weight_diff && $pallet_cal <= $pallet_qty){
-                             if($pallet->tpl_qty != 0){
-                                $pallet_cal += $pallet->tpl_qty/$box->sit_palletvolume;
-                                $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
+        //             if($request->over_kk != null && $request->qty_pallet != null){
+        //                 if($weight_all <= $weight_diff && $pallet_cal <= $pallet_qty){
+        //                      if($pallet->tpl_qty != 0){
+        //                         $pallet_cal += $pallet->tpl_qty/$box->sit_palletvolume;
+        //                         $weight_all += ($box->sit_grossweight)*$pallet->tpl_qty;
                                 
-                                $containerdetial = new ContainerDetial();
-                                $containerdetial->ctnd_ctn_id       = $container->ctn_id;
-                                $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
-                                $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
-                                $containerdetial->remark            = "";
-                                $containerdetial->save();  
-                            }
+        //                         $containerdetial = new ContainerDetial();
+        //                         $containerdetial->ctnd_ctn_id       = $container->ctn_id;
+        //                         $containerdetial->ctnd_mp_id        = $mainpallet->mp_id;
+        //                         $containerdetial->ctnd_pallet_qty   = $pallet->tpl_qty;
+        //                         $containerdetial->remark            = "";
+        //                         $containerdetial->save();  
+        //                     }
 
-                        }
-                    }
+        //                 }
+        //             }
 
-                }   
-            }
+        //         }   
+        //     }
        
-        }
+        // }
 
         
          
-        $container2 = Container::find($container->ctn_id);
-        $container2->ctn_pallet = $pallet_cal;
-        $container2->save();
+        // $container2 = Container::find($container->ctn_id);
+        // $container2->ctn_pallet = $pallet_cal;
+        // $container2->save();
 
         // echo "weight_all : ".($weight_all)."</br>";
         // echo "pallet_all : ".$pallet_cal."</br>";
@@ -324,7 +356,8 @@ class AutoLoadingController extends Controller
       
         $arr_items = $request->pallet_select ;
         $arr_results = array_filter( $arr_items );
- 
+      
+        Session::put('mainpallet',$arr_results);
       
         foreach($arr_results as $key => $value){
             
@@ -493,15 +526,16 @@ class AutoLoadingController extends Controller
             'max'           => $con_size,
             'use'           => 0,
             'remain'        => $con_size,
-            'pallet_max'    => $pallet_qty_check,
+            'pallet_max'    => $qty_pallet,
             'pallet_id'     => [],
         );
 
 
+      
         $count_container = 0;
         for($a=0;$a<$digi;$a++){
             foreach($pallet_weight[$a] as $key => $val){
-                if($container2['remain'] > $pallet_weight[$a][$key]['max'] && count($container2['pallet_id']) < $qty_pallet){
+                if($container2['remain'] > $pallet_weight[$a][$key]['max'] && count($container2['pallet_id']) < $container2['pallet_max']){
                     $container2['use']                          = $container2['use'] + $pallet_weight[$a][$key]['max'];
                     $container2['remain']                       = $container2['max'] - $container2['use'];
                     $container2['pallet_id'][]                  += $key;
@@ -511,7 +545,7 @@ class AutoLoadingController extends Controller
                         'max'           => $con_size,
                         'use'           => 0,
                         'remain'        => $con_size,
-                        'pallet_max'    => $pallet_qty_check,
+                        'pallet_max'    => $qty_pallet,
                         'pallet_id'     => [],
                     );
                 }
@@ -519,25 +553,24 @@ class AutoLoadingController extends Controller
         }
 
        
-
+      
         for($i=1;$i<=$count_container+1;$i++){
             $container[$i] = array(
                 'max'           => $con_size,
                 'use'           => 0,
                 'remain'        => $con_size,
-                'pallet_max'    => $pallet_qty_check,
+                'pallet_max'    => $qty_pallet,
                 'pallet_id'     => [],
                 'container_id'  => [],
             );
         }
 
      
-      
+       
         for($a=0;$a<$digi;$a++){
               foreach($pallet_weight[$a] as $key => $val){
                 for($c=1;$c<=count($container);$c++){
-
-                        if($container[$c]['remain'] > $pallet_weight[$a][$key]['max'] && count($container[$c]['pallet_id']) < $qty_pallet){
+                        if($container[$c]['remain'] > $pallet_weight[$a][$key]['max'] && count($container[$c]['pallet_id']) < $container[$c]['pallet_max']){
                             $container[$c]['use']                          = $container[$c]['use'] + $pallet_weight[$a][$key]['max'];
                             $container[$c]['remain']                       = $container[$c]['max'] - $container[$c]['use'];
                             $container[$c]['pallet_id'][]                  += $key;
@@ -547,9 +580,8 @@ class AutoLoadingController extends Controller
                         }
                 }
             }
-
-            
         }
+        
 
         $id                     = $request->id;
         $type                   = $request->type;
@@ -559,6 +591,7 @@ class AutoLoadingController extends Controller
         $qty_pallet             = $request->qty_pallet;
         $container_qty          = $count_container+1;
         
+      
         $data = array(
             'id'                    => $id,
             'type'                  => $type,
@@ -571,6 +604,8 @@ class AutoLoadingController extends Controller
             'container_qty'         => $container_qty,
         );  
 
+        Session::put('container',$container);
+        Session::put('pallet_weight',$pallet_item_id);
         // foreach(Session::get('cart') as $value){
         //     echo $value['id'];
         // }

@@ -80,7 +80,7 @@ Manual Load Container
                     
                     <hr>
                     <div class="row">
-                        <div class="col-md-6 col-12">
+                        <div class="col-lg-6 col-md-12  col-12">
                             <p>ขั้นตอนที่ 2 เลือก Pallet ที่ต้องการ</p>
                             <div class="row">
                                 <div class="col-12">
@@ -168,7 +168,7 @@ Manual Load Container
                             </div>
                         </div>
                         {{-- {{dd(Session::get('cart'))}} --}}
-                        <div class="col-md-6 col-12">
+                        <div class="col-lg-6 col-md-12  col-12">
                             <p>ขั้นตอนที่ 3 ตรวจสอบ Pallet ที่เลือกและยืนยัน</p>
                             <h5 class="text-success">จำนวน Pallet ที่ Load ขึ้น Container แล้ว</h5>
                             <div class="table-responsive">
@@ -189,8 +189,11 @@ Manual Load Container
                                         @if (Session::get('cart') != null)
                                         @php
                                         $sum_total = 0;
+                                        $sum_per_qty = 0;
+                                        $sum_weight_all = 0;
                                         $i = 0;
                                         $weight_pallet = 0;
+                                        
                                         @endphp
                                         @foreach (Session::get('cart') as $key => $value)
                                         @php
@@ -221,24 +224,14 @@ Manual Load Container
                                             $sum_pallet_sel = $per_pallet*$value['qty'];
                                             $weight_per = 0;
                                             foreach ($pallets_counts as $pallets_count) {
-                                                // $weight_per += ($per_pallet * $value['qty']) * ($pallets_count->sit_netweight / $pallets_count->sit_palletvolume);
-                                    
-                                                if($pallet_diff <= $sum_pallet_sel){
-                                                    if($pallets_count->tpl_qty > $sum_pallet_sel){
-                                                        $pallet_diff += $sum_pallet_sel;
-                                                    }else{
-                                                        if($pallet_diff > $sum_pallet_sel){
-                                                            $pallet_diff +=  ($pallet_diff - $sum_pallet_sel);
-                                                        }else{
-                                                            $pallet_diff += ($pallets_count->tpl_qty);
-                                                        }
-                                                    }
-                                                       
-                                                }
+                                                
+                                                $weight_per += $pallets_count->sit_netweight * ceil($pallets_count->tpl_qty);
+                                                // echo $pallets_count->sit_netweight." * ".$pallets_count->tpl_qty."<br/>";
+                                                
                                             }
-                                            
+                                            // echo "<hr>";
                                             $weight_pallet += $pallets_de->sit_netweight * ($per_pallet * $value['qty']);
-                                          
+                                      
                                             @endphp
                                             <tr>
                                                 <td class="text-center">{{++$i}}</td>
@@ -247,17 +240,21 @@ Manual Load Container
                                                 <td class="text-center">{{$per_pallet * $value['qty']}}</td>
                                                 <td class="text-center">{{ $pallets_de->tp_width.'x'.$pallets_de->tp_length.'x'.$pallets_de->tp_hieght  }}  W : {{ $pallets_de->tp_weight }}</td>
                                              
-                                                <td class="text-center">{{$pallets_de->sit_netweight * ($per_pallet * $value['qty'])}}</td>
+                                                <td class="text-center">{{$weight_per}}</td>
                                                 <td class="text-center"><p class="btn btn-danger delete_container" atr="{{$value['id']}}" atr2="{{$key}}"  atr3="{{$value['qty']}}"   atr4="{{$value['item']}}" style="cursor: pointer;color:white;">X</p></td>
                                             </tr>
                                             @php
                                               $sum_total += $value['qty'];
+                                              $sum_per_qty += $per_pallet * $value['qty'];
+                                              $sum_weight_all += $weight_per;
                                             @endphp
                                             @endforeach 
                                         @else 
                                             @php
                                                 $sum_total = 0;
                                                 $weight_pallet = 0;
+                                                $sum_per_qty = 0; //
+                                                $sum_weight_all = 0; //
                                             @endphp
                                             <tr>
                                                 <td colspan="8" class="text-center">ยังไม่มีการเลือก Pallet</td>
@@ -267,7 +264,15 @@ Manual Load Container
                                                 <td></td> --}}
                                             </tr>
                                         @endif
-                                       
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td class="text-center">{{$sum_total}}</td>
+                                            <td class="text-center">{{$sum_per_qty}}</td>
+                                            <td></td>
+                                            <td class="text-center">{{$sum_weight_all}}</td>
+                                            <td></td>
+                                        </tr>
                                         <tr>
                                             <td  class="text-right" colspan="5">จำนวน Pallet ที่เตรียมจะ Load</td>
                                             <td>
@@ -280,12 +285,12 @@ Manual Load Container
                                         </tr>
                                         <tr>
                                             <td class="text-right"  colspan="5">น้ำหนัก</td>
-                                            <td><input type="text" name="weight_all" id="weight_all" class="form-control" value="{{$weight_pallet}}" readonly></td>
+                                            <td><input type="text" name="weight_all_kk" id="weight_all_kk" class="form-control" value="{{$sum_weight_all}}" readonly></td>
                                             <td>KK</td>
                                         </tr>
                                         <tr>
                                             <td class="text-right"  colspan="5">น้ำหนัก</td>
-                                            <td><input type="text" name="weight_all" id="weight_all" class="form-control" value="{{$weight_pallet / 1000}}" readonly></td>
+                                            <td><input type="text" name="weight_all_tom" id="weight_all_tom" class="form-control" value="{{$sum_weight_all / 1000}}" readonly></td>
                                             <td>ton</td>
                                         </tr>
                                        
@@ -329,7 +334,6 @@ $(".load_previewmanual").click(function(){
         data:formdata,
     }).done(function(data){
         $("#exampleModal2").modal();
-        console.log(data);
         $(".show_load").html(data);
        
     });
