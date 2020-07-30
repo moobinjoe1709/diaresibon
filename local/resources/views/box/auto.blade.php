@@ -91,11 +91,22 @@ $active = 'box';
                     </div>
                     <br>
                     <div class="row">
-                        <div class="col-12 text-right">
+                        <div class="col-md-2 col-3">
+                            @php
+                                   $count_roj = DB::table('tb_mainpallet')->where('mp_pd_id',$id)->where('mp_location',1)->sum('mp_pallet_qty_main');
+                                   $count_pin = DB::table('tb_mainpallet')->where('mp_pd_id',$id)->where('mp_location',2)->sum('mp_pallet_qty_main');
+                            @endphp
+                            <h4>Roj : {{$count_roj}}</h4> 
+                        </div>
+                        <div class="col-md-2 col-3">
+                           <h4> Pin : {{$count_pin}}</h4> 
+                        </div>
+                        <div class="col-md-8 col-6 text-right">
                             <button style="cursor: pointer;" type="button" id="add_box" class="btn btn-primary">Preview Container</button>
                         </div>
                     </div>
                     <br>
+
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover" id="product1">
                             <thead>
@@ -180,7 +191,7 @@ $active = 'box';
                                
                                
                                 @endphp
-                                <tr  style="background-color:darkgray ;color:white;" class="ui-state-disabled">
+                                <tr  style="{{$box->mp_status == 1 ? 'background-color:#F76464;' : 'background-color:darkgray;'}} color:white;" class="ui-state-disabled">
                                     {{-- <td class="text-center" colspan='2'></td> --}}
                                     <td class="text-left" colspan='12'>
                                         @if ($box->mp_status == 1)
@@ -188,8 +199,8 @@ $active = 'box';
                                         @else 
                                             <i class="fas fa-lock-open lock_pallet" atr="{{$box->mp_id}}"></i> 
                                         @endif
-                                        
-                                            ({{$count_qty_pallet + 1}} -   {{ $boxs[$key]->mp_pallet_qty + $count_qty_pallet}})
+                                            ({{$boxs[$key]->mp_no}} - {{($boxs[$key]->mp_no-1)+$boxs[$key]->mp_pallet_qty}})
+                                            {{-- ({{$count_qty_pallet + 1}} -   {{ $boxs[$key]->mp_pallet_qty + $count_qty_pallet}}) --}}
                                      
                                         
                                         Pallet Size : {{

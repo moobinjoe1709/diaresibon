@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('SearchItem/{id}','ItemsController@searchitem');
         Route::get('importmaster','ItemsController@importmaster');
         Route::get('loadmaster','ItemsController@loadmaster');
+        Route::post('addmaster','ItemsController@addmaster');
         
 
 
@@ -66,7 +67,7 @@ Route::middleware(['auth'])->group(function () {
         //AutoLoading
         Route::resource('autoload','AutoLoadingController');
         Route::post('select_box','AutoLoadingController@select_box');
-        Route::post('load_container','AutoLoadingController@load_container');
+
         Route::post('delete_container','AutoLoadingController@delete_container');
         Route::post('preview_auto','AutoLoadingController@preview_auto');
 
@@ -77,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('delete_box','ManualLoadingController@delete_box');
         Route::post('change_box','ManualLoadingController@change_box');
         Route::post('preview_manual','ManualLoadingController@preview_manual');
+        Route::post('load_container','ManualLoadingController@load_container');
 
         //OutStandardLoading
         Route::resource('outstandardload','OutStandardLoadingController');
@@ -92,11 +94,37 @@ Route::middleware(['auth'])->group(function () {
 
         //OutStandardLoading
         Route::resource('report','ReportController');
-        Route::get('reportcontainer/{id}','ReportController@report')->name('reportcontainer');
+   
 
+        //Adjust
+        Route::resource('adjust','AdjustLoadingController');
+        Route::get('reportcontainer/{id}','AdjustLoadingController@report')->name('reportcontainer');
+        Route::get('adjustcontainer/{id}','AdjustLoadingController@adjustcontainer');
+        Route::post('addremark','AdjustLoadingController@addremark');
+        Route::delete('delitems/{id}','AdjustLoadingController@delitems');
+        Route::delete('delpallet/{id}','AdjustLoadingController@delpallet');
+        
+        Route::get('addcontainer/{id}/{lastpallet}/{latitem}','AdjustLoadingController@addcontainer');
+        Route::post('load_pallet_container','AdjustLoadingController@load_pallet_container');
+
+        Route::post('delete_pallet_out_container','AdjustLoadingController@delete_pallet_out_container');
+        Route::post('updatecontainer','AdjustLoadingController@updatecontainer');
+        
     });
 });
 
+Route::get('/clc', function() {
+
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('config:cache');
+    Artisan::call('view:clear');
+        // Artisan::call('view:clear');
+        // session()->forget('key');
+    return "Cleared!";
+  
+  });
+  
 //member
 // Route::post('checklogin','auth\LoginController@checklogin')->name('login2');
 Route::post('regismember','auth\RegisterController@store')->name('regismember');

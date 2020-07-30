@@ -79,6 +79,20 @@
                     </div>
                 </li> --}}
                 <li class="sub-menu">
+                    <a href="#container" data-toggle="collapse" aria-expanded="false">
+                        <i class="fas fa-th"></i>
+                        <span class="nav-text">จัดการ Container</span>
+                        <span class="fa fa-angle-left angle"></span>
+                    </a>
+                    <div class="sub-content">
+                            <ul class="collapse list-unstyled" id="container">
+                                <li>
+                                    <a href="{{ url('adjust') }}">Container adjust</a>
+                                </li>
+                            </ul>
+                        </div>
+                </li>
+                {{-- <li class="sub-menu">
                     <a href="#report" data-toggle="collapse" aria-expanded="false">
                         <i class="fas fa-th"></i>
                         <span class="nav-text">จัดการ Report</span>
@@ -91,7 +105,7 @@
                                 </li>
                             </ul>
                         </div>
-                </li>
+                </li> --}}
                 {{-- <li class="sub-menu">
                     <a href="#container" data-toggle="collapse" aria-expanded="false">
                         <i class="fas fa-shuttle-van"></i>

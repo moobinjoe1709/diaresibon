@@ -61,16 +61,56 @@
                         </div>
                     </div>
                     <hr>
+                    @php
+                        $containers = DB::table('tb_containers')->where('ctn_pd_id',$id)->get();
+                       
+                    @endphp
                     <div class="row">
-                        <div class="col-md-12 col-12 text-right">
+                        <div class="col-md-6 col-6">
+                            <h5>รายละเอียดข้อมูล Container (ที่ทำการโหลดแล้ว)</h5> 
+                            <br>
+                            จำนวนตู้ทั้งหมด : {{count($containers)}}
+                        </div>
+                        <div class="col-md-6 col-6 text-right">
                             <b>Date load :  </b>  {{thai_date_fullmonth2(date("Y-m-d"))}}
                         </div>
                      </div>
+                     <br>
+                     <div class="row">
+                        @foreach ($containers as $num => $item)
+
+                            <div class="col-md-4 col-6" style="margin: 0px 0px 10px 0px;">
+                                <table>
+                                    <tr>
+                                        <td class="text-left"><b>ตู้ที่   :  </b>  </td>
+                                        <td>{{++$num}} </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-left"><b>จำนวน pallet   :   </b></td>
+                                        <td>{{substr_count($item->pallet_id,',')+1}} pallet</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-left"><b>น้ำหนักตู้   :   </b></td>
+                                        <td>{{$item->ctn_use}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-left"><b>โหลดที่   :   </b></td>
+                                        <td>{{$item->ctn_location == 1 ? 'ROJ' : 'PIN'}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                         @endforeach
+                    </div>
                      <hr>
                      <div class="row">
                         <div class="col-md-12 col-12">
+                           
+                            @if (count($container) > 0)
+                            <h5>รายละเอียด Container ที่กำลังทำการโหลด</h5>
+                            <br>
                             <div class="table-responsive">
                                 {{-- {{dd(count($container),$container,$pallet_weight)}} --}}
+                               
                                 @php
                                     $count_con = 0;
                                     $pallet_all = 0;
@@ -80,7 +120,7 @@
                                 
                               
                                 @php
-                           
+                            
                                     $check_lap              = 1;
                                     $qty_box_all            = 0; //จำนวนกล่อง รวมทั้งหมด
                                     $qty_item_all           = 0; //จำนวนชิ้น รวมทั้งหมด
@@ -91,7 +131,7 @@
                                         @php
                                             $val['container_id'][$no]; //ตำแหน่ง group item
                                             $item; //ตำแหน่ง item ใน group
-
+                            
                                             $array                 = $pallet_weight[$val['container_id'][$no]][$item]['tpl'];
                                             $check_lap2            = 1;
                                             $count_array           = count($array);
@@ -100,7 +140,7 @@
                                             $netweight_sum         = 0; //netweight รวมต่อ pallet
                                             $grossweight_sum       = 0; //grossweight รวมต่อ pallet
                                         @endphp
-
+                            
                                             @foreach ($array as $key => $value) 
                                                 @php
                                                     $pallet = DB::table('tb_pallet')
@@ -110,7 +150,7 @@
                                                                 ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
                                                                 ->where('tpl_id',$key)
                                                                 ->first();
-
+                            
                                                     $mainpallet = DB::table('tb_mainpallet')
                                                                 ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
                                                                 ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
@@ -119,7 +159,7 @@
                                                                 ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
                                                                 ->where('tpl_id',$key)
                                                                 ->first();
-
+                            
                                                     ++$check_lap2;
                                                     $qty_box            += ceil($value / $mainpallet->sit_netweight); //จำนวน กล่อง รวม
                                                     $qty_item           +=  ceil($pallet->bo_pack_qty *($value / $mainpallet->sit_netweight)); //จำนวน ชิ้น รวม
@@ -135,7 +175,7 @@
                                             $grossweight_sum_all    += $grossweight_sum; //grossweight รวมทั้งหมด
                                         @endphp
                                     @endforeach
-                                    @if (count($val['pallet_id']) == $container[1]['pallet_max'])
+                                    {{-- @if (count($val['pallet_id']) == $container[1]['pallet_max']) --}}
                                     @php
                                         $count_con += 1;
                                         $pallet_all += count($val['pallet_id']);
@@ -190,9 +230,7 @@
                                         </div>
                                     </div>
                                     <hr>
-                                    @endif
-                                 
-                                   
+                                    {{-- @endif --}}
                                 @endforeach
                             </div>
                             <br>
@@ -229,6 +267,9 @@
                                     <h5><b> KK.</b></h5>
                                 </div>
                             </div>
+                            @else
+                                <div class="text-center"><h5>จำนวน Pallet ไม่ถึงจำนวนที่กำหนด ไม่สามารถ Load to Container</h5></div>
+                            @endif     
                         </div>
                      </div>
                 </form>

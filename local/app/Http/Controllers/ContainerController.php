@@ -120,7 +120,7 @@ class ContainerController extends Controller
                             // ->where('mp_pallet_qty','<>',0)    
                             ->where('mp_qty','>',0)    
                             ->get();
-
+        // dd($pallets,$id);
         $pallets2 = DB::table('tb_mainpallet')
                             ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
                             ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
@@ -131,7 +131,7 @@ class ContainerController extends Controller
                             ->groupBy('mp_id')
                             ->where('tpl_pd_id',$id)    
                             ->whereNull('mp_status_load')
-                            // ->where('mp_pallet_qty','<>',0)    
+                            ->where('mp_pallet_qty','>',0)    
                             ->where('mp_qty','<>',0)             
                             ->get();
     

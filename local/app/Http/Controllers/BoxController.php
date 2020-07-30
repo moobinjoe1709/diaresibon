@@ -137,7 +137,7 @@ class BoxController extends Controller
             'boxs' => $boxs,
             'boxs_find' => $boxs_find
         );
-       
+ 
         return view ('box.edit',$data);
     }
 
@@ -152,6 +152,7 @@ class BoxController extends Controller
     {
         $boxs_find = DB::table('tb_boxs')->where('bo_pd_id','=',$id)->first();
 
+    
        
         $value = $request->sel;
 
@@ -169,7 +170,7 @@ class BoxController extends Controller
             // ->where('bo_order_qty_sum','<>',0)
             ->orderBy('bo_so','asc')
             ->get();
-      
+        
         
         $boxs2 = DB::table('tb_boxs')->where('bo_pd_id','=',$id)->whereIn('bo_id', explode(',',$comma_separated))->get();
         
@@ -191,14 +192,14 @@ class BoxController extends Controller
             // $boxs_find->bo_ct_id
         );
        
-        // dd(Session::all());
+    
         // dd(Session::get('cart'.Session::get('layer_sel')));
         if($check_load >= 1){
-            // dd('1');
+        
             return view('box.show',$data);
         }else{
             
-            // dd('3');
+        
             return view('box.overview',$data);
         }
        
@@ -313,14 +314,17 @@ class BoxController extends Controller
             }
         }
 
-        // $all_weight = 0;
-        // foreach(Session::get('cart1') as $item){
-        //     $all_weight += $item['weight'];
-        // }
-
-        // echo $sum_count;
+        $mainpallet_find = Mainpallet::where('mp_pd_id',$request->id)->orderBy('mp_id','desc')->first();
+       
+        if($mainpallet_find != null){
+            $last_pallet_no = $mainpallet_find->mp_no +  $mainpallet_find->mp_pallet_qty_main;
+        }else{
+            $last_pallet_no = 1;
+        }
+       
         $mainpallet = new Mainpallet();
         $mainpallet->mp_pd_id                = $request->id;
+        $mainpallet->mp_no                   = $last_pallet_no;
         $mainpallet->mp_qty                  = $sum_count;
         $mainpallet->mp_qty_main             = $sum_count;
         $mainpallet->mp_location             = $request->sel_location;
@@ -473,9 +477,18 @@ class BoxController extends Controller
                         ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
                         ->first();
 
+            $mainpallet_find = Mainpallet::where('mp_pd_id',$request->id)->orderBy('mp_id','desc')->first();
+       
+            if($mainpallet_find != null){
+                $last_pallet_no = $mainpallet_find->mp_no +  $mainpallet_find->mp_pallet_qty_main;
+            }else{
+                $last_pallet_no = 1;
+            }
+           
             // dd($request,array_sum($request->box_item) / (int)$boxs->bo_pack_qty,(int)$boxs->bo_pack_qty);
             $mainpallet                         = new Mainpallet();
             $mainpallet->mp_pd_id               = $request->id;
+            $mainpallet->mp_no                  = $last_pallet_no;
             $mainpallet->mp_qty                 = array_sum($request->box_item) / (int)$boxs->bo_pack_qty;
             $mainpallet->mp_qty_main            = array_sum($request->box_item) / (int)$boxs->bo_pack_qty;
             $mainpallet->mp_location            = $request->sel_location;
@@ -555,8 +568,18 @@ class BoxController extends Controller
                         ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name')
                         ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
                         ->first();
+
+            $mainpallet_find = Mainpallet::where('mp_pd_id',$request->id)->orderBy('mp_id','desc')->first();
+       
+            if($mainpallet_find != null){
+                $last_pallet_no = $mainpallet_find->mp_no +  $mainpallet_find->mp_pallet_qty_main;
+            }else{
+                $last_pallet_no = 1;
+            }
+
             $mainpallet                 = new Mainpallet();
             $mainpallet->mp_pd_id       = $request->id;
+            $mainpallet->mp_no          = $last_pallet_no;
             $mainpallet->mp_qty         = ($request->total_pallet)  * ($request->cartonlayer * $request->cartonperlayer);
             $mainpallet->mp_qty_main    = ($request->total_pallet)  * ($request->cartonlayer * $request->cartonperlayer);
             $mainpallet->mp_location    = $request->sel_location;

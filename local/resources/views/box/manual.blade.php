@@ -112,6 +112,31 @@ Manual Load Container
                                         @if (count($pallets2) > 0)
                                             @foreach ($pallets2 as $key => $pallet)
                                             @php
+                                             $pallets_counts = DB::table('tb_mainpallet')
+                                                        ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
+                                                        ->leftjoin('tb_pallet','tb_mainpallet.mp_id','=','tb_pallet.tpl_mp_id')
+                                                        ->leftjoin('tb_boxs','tb_pallet.tpl_bo_id','=','tb_boxs.bo_id')
+                                                        ->leftjoin('tb_items','tb_boxs.bo_item','=','tb_items.it_name') 
+                                                        ->leftjoin('tb_subitems','tb_items.it_id','=','tb_subitems.sit_it_id')
+                                                        ->leftjoin('tb_typepalate','tb_subitems.sit_pallet','=','tb_typepalate.tp_id')
+                                                        ->where('tpl_mp_id',$pallet->tpl_mp_id)
+                                                        ->get();    
+                                            // dd($pallets_counts);
+                                            $item_sum = 0;
+                                            $weight_pallet = 0;
+                                            foreach ($pallets_counts as $pallets_count) {
+                                                $item_sum += $pallets_count->tpl_qty;
+                                            }
+                                            if(count($pallets_counts) > 1){
+                                                foreach ($pallets_counts as $pallets_count) {
+                                                    $weight_pallet += $pallets_count->sit_netweight * $pallets_count->tpl_qty;
+                                                // echo $pallets_count->sit_netweight." * ".$pallets_count->tpl_qty."<br/>";
+                                                }
+                                                // echo  " 1: ".$weight_pallet. "<br>";
+                                            }else{
+                                                $weight_pallet = ceil($item_sum) * $pallets_counts[0]->sit_netweight;
+                                                // echo  " 2: ".$weight_pallet. "<br>";
+                                            }
                                             $sum_pallet = 0;
                                             $per_pallet = $pallet->mp_qty_main/$pallet->mp_pallet_qty_main;
                                             
@@ -122,7 +147,7 @@ Manual Load Container
                                                 <td class="text-left"> <input type="text" class="form-control" name="pallet_qty" id="pallet_qty{{$pallet->mp_id}}" value="{{$pallet->mp_pallet_qty}}"></td>
                                                 <td class="text-center">{{$pallet->mp_qty }}</td>
                                                 <td class="text-left">Size : {{ $pallet->tp_width.'x'.$pallet->tp_length.'x'.$pallet->tp_hieght  }}  W : {{ $pallet->tp_weight }}</td>
-                                                <td>{{($pallet->mp_qty * $pallet->sit_netweight)}}</td>
+                                                <td>{{number_format($weight_pallet,2,'.',',')}}</td>
                                                 <td class="text-center">
                                                     @if ($pallet->mp_status == 1)
                                                         <h4><p class="btn btn-danger"><i class="fas fa-times-circle"></i></p></h4>
@@ -192,11 +217,12 @@ Manual Load Container
                                         $sum_per_qty = 0;
                                         $sum_weight_all = 0;
                                         $i = 0;
-                                        $weight_pallet = 0;
+                                      
                                         
                                         @endphp
                                         @foreach (Session::get('cart') as $key => $value)
                                         @php
+                                              $weight_pallet = 0;
                                             $pallet_diff = 0;
                                             $pallets_de = DB::table('tb_mainpallet')
                                                         ->select('tb_mainpallet.*','tb_pallet.*','tb_boxs.*','tb_items.*','tb_subitems.*','tb_typepalate.*')
@@ -219,19 +245,31 @@ Manual Load Container
                                                         ->where('tpl_mp_id',$value['id'])
                                                         ->get();    
                                             
-                                                  
+                                            
                                             $per_pallet = $pallets_de->mp_qty_main/$pallets_de->mp_pallet_qty_main;
                                             $sum_pallet_sel = $per_pallet*$value['qty'];
+                                        
                                             $weight_per = 0;
+                                            $item_sum = 0;
+                                          
                                             foreach ($pallets_counts as $pallets_count) {
-                                                
-                                                $weight_per += $pallets_count->sit_netweight * ceil($pallets_count->tpl_qty);
-                                                // echo $pallets_count->sit_netweight." * ".$pallets_count->tpl_qty."<br/>";
-                                                
+                                                $item_sum += $pallets_count->tpl_qty;
                                             }
-                                            // echo "<hr>";
-                                            $weight_pallet += $pallets_de->sit_netweight * ($per_pallet * $value['qty']);
-                                      
+                                            if(count($pallets_counts) > 1){
+                                                // foreach ($pallets_counts as $pallets_count) {
+                                                    // $weight_pallet += $pallets_count->sit_netweight * $pallets_count->tpl_qty;
+                                                    $weight_pallet += $pallets_count->sit_netweight*($per_pallet*$value['qty']);
+                                                // }
+                   
+                                            }else{
+                                                $weight_pallet = ceil($item_sum) * $pallets_counts[0]->sit_netweight;
+                                                echo  " 2: ".$weight_pallet. "<br>";
+                                            }
+                                           
+                                          
+                                           
+                                          
+                                            
                                             @endphp
                                             <tr>
                                                 <td class="text-center">{{++$i}}</td>
@@ -240,13 +278,13 @@ Manual Load Container
                                                 <td class="text-center">{{$per_pallet * $value['qty']}}</td>
                                                 <td class="text-center">{{ $pallets_de->tp_width.'x'.$pallets_de->tp_length.'x'.$pallets_de->tp_hieght  }}  W : {{ $pallets_de->tp_weight }}</td>
                                              
-                                                <td class="text-center">{{$weight_per}}</td>
+                                                <td class="text-center">{{number_format($weight_pallet,2,'.',',')}}</td>
                                                 <td class="text-center"><p class="btn btn-danger delete_container" atr="{{$value['id']}}" atr2="{{$key}}"  atr3="{{$value['qty']}}"   atr4="{{$value['item']}}" style="cursor: pointer;color:white;">X</p></td>
                                             </tr>
                                             @php
                                               $sum_total += $value['qty'];
                                               $sum_per_qty += $per_pallet * $value['qty'];
-                                              $sum_weight_all += $weight_per;
+                                              $sum_weight_all += $weight_pallet;
                                             @endphp
                                             @endforeach 
                                         @else 
@@ -270,7 +308,7 @@ Manual Load Container
                                             <td class="text-center">{{$sum_total}}</td>
                                             <td class="text-center">{{$sum_per_qty}}</td>
                                             <td></td>
-                                            <td class="text-center">{{$sum_weight_all}}</td>
+                                            <td class="text-center">{{number_format($sum_weight_all,2,'.',',')}}</td>
                                             <td></td>
                                         </tr>
                                         <tr>
@@ -285,7 +323,7 @@ Manual Load Container
                                         </tr>
                                         <tr>
                                             <td class="text-right"  colspan="5">น้ำหนัก</td>
-                                            <td><input type="text" name="weight_all_kk" id="weight_all_kk" class="form-control" value="{{$sum_weight_all}}" readonly></td>
+                                            <td><input type="text" name="weight_all_kk" id="weight_all_kk" class="form-control" value="{{number_format($sum_weight_all,2,'.',',')}}" readonly></td>
                                             <td>KK</td>
                                         </tr>
                                         <tr>

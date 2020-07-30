@@ -73,6 +73,7 @@
                             <table class="table table-bordered table-hover" id="product1">
                                 <thead>
                                     <tr class="text-center">
+                                        <th class="text-center">No.</th>
                                         <th class="text-center">#</th>
                                         <th class="text-center">FG ID</th>
                                         <th class="text-center">Part No</th>
@@ -135,6 +136,9 @@
                                             @endphp     
                                              
                                             <tr class="text-center">
+                                                <td>
+                                                    {{$check_lap2 == 1 ? $check_lap :  "''"}}
+                                                </td>
                                                 <td class="text-center">
                                                     {{$pallet->bo_so}}
                                                
@@ -150,9 +154,9 @@
                                                 <td class="text-center"> {{ $pallet->bo_pack_qty }} </td>
                                                 <td class="text-center">{{ceil($value / $mainpallet->sit_netweight)}} </td>
                                                 {{-- <td class="text-center">C/N 1-UP</td> --}}
-                                                <td class="text-center">{{ ceil($pallet->bo_pack_qty *($value / $mainpallet->sit_netweight)) }}</td>
-                                                <td class="text-center">{{$value}}</td>
-                                                <td class="text-center">{{ ($value / $mainpallet->sit_netweight) *  $mainpallet->sit_grossweight}}</td>
+                                                <td class="text-center">{{ number_format(ceil($pallet->bo_pack_qty *($value / $mainpallet->sit_netweight)),2,'.',',') }}</td>
+                                                <td class="text-center">{{number_format($value,2,'.',',')}}</td>
+                                                <td class="text-center">{{ number_format(($value / $mainpallet->sit_netweight) *  $mainpallet->sit_grossweight,2,'.',',')}}</td>
                                             </tr>
                                             @php
                                                 ++$check_lap2;
@@ -169,15 +173,16 @@
                                                     <td></td>
                                                     <td></td>
                                                     <td></td>
+                                                    <td></td>
                                                     <td class="text-center"></td>
                                                     <td class="text-center">{{ceil($qty_box)}}</td>
-                                                    <td class="text-center">{{$qty_item}}</td>
-                                                    <td class="text-center">{{$netweight_sum}}</td>
-                                                    <td class="text-center">{{$grossweight_sum}}</td>
+                                                    <td class="text-center">{{number_format($qty_item,2,'.',',')}}</td>
+                                                    <td class="text-center">{{number_format($netweight_sum,2,'.',',')}}</td>
+                                                    <td class="text-center">{{number_format($grossweight_sum,2,'.',',')}}</td>
                                                 </tr>
                                             @endif
                                             <tr>
-                                                <td colspan="10"></td>
+                                                <td colspan="11"></td>
                                             </tr>
                                         @php
                                             ++$check_lap;
@@ -189,7 +194,7 @@
                                         @endphp
                                     @endforeach
                                     <tr>
-                                        <td  colspan="10" style="padding: 1.5rem;"></td>
+                                        <td  colspan="11" style="padding: 1.5rem;"></td>
 
                                     </tr>
                                     <tr>
@@ -198,11 +203,12 @@
                                         <td></td>
                                         <td></td>
                                         <td></td>
+                                        <td></td>
                                         <td class="text-center">Total</td>
                                         <td class="text-center">{{ceil($qty_box_all)}}</td>
-                                        <td class="text-center">{{$qty_item_all}}</td>
-                                        <td class="text-center">{{$netweight_sum_all}}</td>
-                                        <td class="text-center">{{$grossweight_sum_all}}</td>
+                                        <td class="text-center">{{number_format($qty_item_all,2,'.',',')}}</td>
+                                        <td class="text-center">{{number_format($netweight_sum_all,2,'.',',')}}</td>
+                                        <td class="text-center">{{number_format($grossweight_sum_all,2,'.',',')}}</td>
                                     </tr>
                                 </tbody>
                             </table>  

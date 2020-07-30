@@ -108,24 +108,5 @@ class ReportController extends Controller
         //
     }
 
-    public function report($id)
-    {
-
-        $containers = DB::table('tb_containers')
-        ->groupBy('ctn_number')
-        ->where('ctn_pd_id',$id)->get();
-
-        $data = array(
-            'containers' => $containers,
-            'id' => $id,
-        );
-
-        // $pdf = App::make('dompdf.wrapper');
-        // $pdf->loadHTML('<h1>Test</h1>');
-        // return $pdf->stream();
-
-        $pdf = PDF::loadView('report.report', $data)->setPaper('a4', 'landscape');
-        return $pdf->stream();
-
-    }
+   
 }

@@ -21,7 +21,8 @@
                         สร้าง Items
                     </div>
                     <div class="col-6 col-md-6 text-right">
-                        {{-- <a class="btn btn-secondary" href="{{ url('importmaster') }}">Import Master</a> --}}
+                        {{-- <a class="btn btn-success" style="color:white;" href="{{ url('loadmaster') }}">Master Templates</a> --}}
+                        <button class="btn btn-secondary" data-toggle="modal" data-target="#exampleModal2" style="cursor: pointer;"><i class="fas fa-plus"></i> Import Master</button>
                     </div>
                 </div>
             </div>
@@ -149,6 +150,43 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary update_item">แก้ไข</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModal2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Import Master</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{url('addmaster')}}" method="post"  enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-4 col-md-4">
+                            <div class="form-group">
+                                <label for="upload">Import File Master</label>
+                                <input type="file" class="form-control-file" name="upload" id="upload" value="">
+                                @if ($errors->has('upload'))
+                                    <span class="text-danger" role="alert">
+                                        <strong>{{ $errors->first('upload') }}</strong>
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" class="form-control" id="id_item_edit" name="id_item_edit">
+                    {{-- <button type="submit" class="btn btn-primary mb-2">แก้ไข</button> --}}
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary update_item">บันทึก</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
                 </div>
             </form>

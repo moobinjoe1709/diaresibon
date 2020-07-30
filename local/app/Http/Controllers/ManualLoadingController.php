@@ -9,6 +9,7 @@ use App\Pallets;
 use App\Boxs;
 use App\Container;
 use App\Mainpallet;
+use App\ContainerDes;
 use App\ContainerDetial;
 use DB;
 use Session;
@@ -42,41 +43,162 @@ class ManualLoadingController extends Controller
      */
 
     public function store(Request $request){
-        
-        foreach(Session::get('container') as $key => $val){
-            $im_pallet      = implode(',',$val['pallet_id']);
-            $im_container   = implode(',',$val['container_id']);
-            $container = new Container;
-            $container->ctn_pd_id       = $request->id;
-            $container->ctn_size        = $request->container_size;
-            $container->ctn_location    = $request->location;
-            $container->ctn_over_kk     = $request->weight_over;
-            $container->ctn_number      = $key;
-            $container->ctn_use         = $val['use'];
-            $container->ctn_remain      = $val['remain'];
-            $container->ctn_date        = now();
-            $container->pallet_id       = $im_pallet;
-            $container->container_id    = $im_container;
-            $container->save();
-        }
 
-        Session::forget('container');
-        Session::forget('pallet_weight');
-        Session::forget('cart');
-        return redirect()->back()->with('success','Load Paller ขึ้น Container เรียบร้อย!!');
-        // dd($request,Session::get('container'),Session::get('pallet_weight'));
+        if(Session::get('container') > 0){
+            // dd(Session::get('container'),Session::get('pallet_weight'),Session::get('mainpallet'),Session::get('concat'));
 
-        // foreach (Session::get('container') as $key => $val){
-        //     foreach ($val['pallet_id'] as $no => $item){
-        //         echo Session::get('palelt_weight')[$val['container_id'][$no]][$item]['tpl'];
-        //         $array                 = Session::get('palelt_weight')[$val['container_id'][$no]][$item]['tpl'];
+            $count_lap = 0;
 
-        //         // print_r($array);
+            foreach(Session::get('mainpallet') as $key => $item){
+            
+                $mainpallet = Mainpallet::find($item);
                 
-        //     }
-        // }   
-        
-        // dd(Session::get('container'));
+                $per_pallet         =   $mainpallet->mp_qty_main / $mainpallet->mp_pallet_qty_main;     //จำนวนกล่่องต่อ pallet
+                $count_pallet       =   $mainpallet->mp_pallet_qty - Session::get('concat')[$count_lap]; //จำนวน pallet ที่เหลิอ
+                $qty_box_remain     =   $per_pallet*$count_pallet;
+              
+                // echo Session::get('concat')[$count_lap]."<br/>";
+                $mainpallet2 = Mainpallet::find($item);
+                $mainpallet2->mp_qty         = $qty_box_remain;
+                $mainpallet2->mp_pallet_qty  = $count_pallet;
+                $mainpallet2->save();
+                
+                
+                $qty_box_use        =   0;
+                $qty_box_remain     =   Session::get('concat')[$count_lap]*$per_pallet;
+              
+                // echo $qty_box_remain."<br/>";
+                // echo "<br/>";
+                $pallets = Pallets::where('tpl_mp_id',$item)->get();
+                foreach($pallets as $pallet){
+                    $pallet_1 = Pallets::where('tpl_id',$pallet->tpl_id)->first();
+                    $pallet_edit = Pallets::where('tpl_id',$pallet->tpl_id)->first();
+
+                    if( $qty_box_remain != $qty_box_use){
+                        if($qty_box_use <= $qty_box_remain && $qty_box_remain >= $pallet->tpl_qty){
+                            // echo " 1 <br/>";
+                            if($qty_box_remain >= $pallet->tpl_qty){
+                                $pallet_1->tpl_qty   = $pallet_edit->tpl_qty-$pallet->tpl_qty;
+                                // echo $pallet->tpl_qty." 1 <br/>";
+                                $qty_box_use         +=   $pallet->tpl_qty;
+                                $qty_box_remain      -=  $pallet->tpl_qty;
+                            }else{
+                                $pallet_1->tpl_qty   = $pallet_edit->tpl_qty-$qty_box_remain;
+                                // echo $qty_box_remain." 2 <br/>";
+                                $qty_box_use         +=   $qty_box_remain;
+                                $qty_box_remain      =    $qty_box_remain;
+                            }
+                        }else{
+                            // echo " 2 <br/>";
+                            if($qty_box_remain >= $pallet->tpl_qty){
+                                $pallet_1->tpl_qty   = $pallet_edit->tpl_qty-$pallet->tpl_qty;
+                                // echo $pallet->tpl_qty." 3 <br/>";
+                                $qty_box_use         +=   $pallet->tpl_qty;
+                                $qty_box_remain      -=   $pallet->tpl_qty;
+                            }else{
+                                $pallet_1->tpl_qty   = $pallet_edit->tpl_qty-$qty_box_remain;
+                                // echo $qty_box_remain." 4 <br/>";
+                                $qty_box_use         +=   $qty_box_remain;
+                                $qty_box_remain       =   $qty_box_remain;
+                            }
+                        }
+                    }
+                    $pallet_1->save();
+                }
+                $count_lap++;
+            }
+    
+
+            $container_group = DB::table('tb_containers')->where('ctn_pd_id',$request->id)->GroupBy('ctn_group')->get();
+     
+            $container_group = count($container_group)+1;
+
+            foreach(Session::get('container') as $key => $val){
+                $container_idm[] = implode(',',$val['container_id']);
+                $im_pallet      = implode(',',$val['pallet_id']);
+                $im_container   = implode(',',$val['container_id']);
+                $container_count = Container::where('ctn_pd_id',$request->id)->count();
+
+                $container = new Container;
+                $container->ctn_pd_id       = $request->id;
+                $container->ctn_size        = $request->container_size;
+                $container->ctn_location    = $request->location;
+                $container->ctn_over_kk     = $request->weight_over;
+                $container->ctn_number      = $key;
+                $container->ctn_use         = $val['use'];
+                $container->ctn_remain      = $val['remain'];
+                $container->ctn_date        = now();
+                $container->pallet_id       = $im_pallet;
+                $container->container_id    = $im_container;
+                $container->save();
+            }
+     
+            $result = array();
+            foreach ($container_idm as $array) {
+                $result = array_merge($result, explode(',',$array));
+            }
+
+     
+            $numpallet = array_unique($result);
+            // dd($numpallet);
+            $status_pallet = 0;
+            foreach($numpallet as $numpal){
+                $previousKey = null;
+                $previousId = null;
+                foreach(Session::get('pallet_weight')[$numpal] as $key => $val){
+                    // echo $val['max'];
+                    if(count($val['tpl']) != null){
+                        if(count($val['tpl']) > 1){
+                            $containerde_type = 2;
+                        }else{
+                            $containerde_type = 1;
+                        }
+                    
+                        $containerdetail  = new ContainerDetial();
+                        $containerdetail->ctnd_pd_id    = $request->id;
+                        $containerdetail->ctnd_ctn_id   = $container->ctn_id;
+                        $containerdetail->ctnd_group    = $container_group;
+                        $containerdetail->ctnd_type     = $containerde_type;
+                        $containerdetail->ctnd_key      = $key;
+                        $containerdetail->ctnd_max      = $val['max'];
+                        $containerdetail->save();
+
+                    
+                        foreach($val['tpl'] as $num => $item){
+                            
+                        $containerdes = new ContainerDes();
+                        $containerdes->ctnds_ctnd_id  =   $containerdetail->ctnd_id;
+                        $containerdes->ctnds_key      =   $num;
+                        $containerdes->ctnds_max      =   $item;
+                        $containerdes->save();
+
+                        
+                        if($containerdetail->ctnd_type != $previousKey){
+                                ++$status_pallet;
+                            }
+                
+                            $containerdes2 = ContainerDes::find($containerdes->ctnds_id);
+                            $containerdes2->ctnds_group    =   $status_pallet;
+                            $containerdes2->save();
+
+                        $previousKey  =       $containerdetail->ctnd_type;
+
+                        }
+                    }
+                }
+            }
+
+            Session::forget('container');
+            Session::forget('pallet_weight');
+            Session::forget('cart');
+            return redirect()->back()->with('success','Load Paller ขึ้น Container เรียบร้อย!!');
+        }else{
+            Session::forget('container');
+            Session::forget('pallet_weight');
+            Session::forget('cart');
+            return redirect()->back()->with('danger','มีข้อผิดพลาดในการ Load Container กรุณาทำการโหลดอีกครั้ง');
+        }
+      
     }
 
     
@@ -304,9 +426,21 @@ class ManualLoadingController extends Controller
        }
       
        
-       $count_pallet = 0;
-       $digi = 0;
+        $count_pallet = 0;
+        $digi = 0;
+        $qty_pallet = ($request->qty_pallet == null ? $pallet_qty_check : $request->qty_pallet);
       
+        // dd($request->pallet_select,Session::get('cart'));
+        
+        $arr_items = array();
+        foreach(Session::get('cart') as $item){
+            $arr_items[] = $item['id'];
+        }
+
+        // dd($arr_items);
+        $arr_results = array_filter( $arr_items );
+      
+     
        foreach (Session::get('cart') as $key => $value){
      
            $mainpallet = DB::table('tb_mainpallet')
@@ -555,11 +689,101 @@ class ManualLoadingController extends Controller
 
             
         }
+      
 
-       
-       
+        $id                     = $request->id;
+        $type                   = $request->type;
+        $container_size         = $request->container_size;
+        $location               = $request->location;
+        $over_kk                = $request->over_kk;
+        $qty_pallet             = $qty_pallet;
+        $container_qty          = $count_container+1;
+      
+        // dd(count($container[count($container)]['pallet_id']),$container_size);
+
+        // if(count($container[count($container)]['pallet_id']) != $container_size){
+        //     unset($container[count($container)]);
+        // }
+        // dd($container,$request,$container_size);
+
+        $use_pallet_all = 0;
+        for($i=1;$i<=count($container);$i++){
+           $use_pallet_all += count($container[$i]['pallet_id']);
+        }
+
         
+        $all_palletload = 0;
+        foreach($arr_results as $val){
+            $mainpallet = Mainpallet::find($val);
+            $all_palletload += $mainpallet->mp_pallet_qty;
+            if($all_palletload){
 
+            }
+        }
+
+
+
+        $max_count_pallet = 0;
+        $remain_pallet = $use_pallet_all;
+
+
+        $concat = [];
+        $check_lap = 0;
+        $arr_qty    = [];
+        foreach(Session::get('cart') as $item){
+            $arr_qty[] = $item['qty'];
+        }
+      
+        foreach($arr_results as $key => $val){
+            $mainpallet = Mainpallet::find($val);
+          
+            // print_r($mainpallet);
+            if($check_lap == 0){
+                $use_pallet = 0;
+            }   
+            // echo $max_count_pallet." != ".$use_pallet_all."<br/>";
+            if($max_count_pallet != $use_pallet_all){
+                // echo $use_pallet." <= ".$remain_pallet." && ".$use_pallet_all." >= ".$arr_qty[$key]."<br/>";
+                if($use_pallet <= $remain_pallet && $use_pallet_all >= $arr_qty[$key]){
+                       
+                    if($remain_pallet > $arr_qty[$key]){
+                        // echo $arr_qty[$key]." : 1 <br/>";
+                        $use_pallet             += $arr_qty[$key];
+                        $remain_pallet          -= $arr_qty[$key];
+                        $max_count_pallet       += $arr_qty[$key];
+                        $concat[]               = $arr_qty[$key];
+                    }else{
+                        // echo $remain_pallet." : 2 <br/>";
+                        $use_pallet             += $remain_pallet;
+                        $remain_pallet          = $remain_pallet;
+                        $max_count_pallet       += $remain_pallet;
+                        $concat[]               = $remain_pallet;
+                        
+                    }
+                }else{
+                    if($remain_pallet > $arr_qty[$key]){
+                        // echo $remain_pallet." 3 <br/>";
+                        $use_pallet         =   $arr_qty[$key];
+                        $concat[]           =   $arr_qty[$key];
+                        $max_count_pallet   +=  $arr_qty[$key];
+                        $remain_pallet      -=  $arr_qty[$key];
+                    }else{
+                        // echo $remain_pallet." 4 <br/>";
+                        $use_pallet         =   $remain_pallet;
+                        $concat[]           =   $remain_pallet;
+                        $max_count_pallet   +=  $remain_pallet;
+                        $remain_pallet      =  $remain_pallet;
+                    }
+                 
+                }
+               
+            }else{
+                $concat[]       =  0;
+            }
+            // echo $remain_pallet;
+            $check_lap++;
+        }
+  
         // dd($container);
         // dd(count($container),$container,$pallet_item_id,$mp_id);
 
@@ -571,9 +795,11 @@ class ManualLoadingController extends Controller
         $pallet_qty_sel     = $request->pallet_qty_sel;
         $container_qty      = $count_container+1;
 
-
+       
         Session::put('container',$container);
         Session::put('pallet_weight',$pallet_item_id);
+        Session::put('mainpallet',$arr_results);
+        Session::put('concat',$concat);
 
         $data = array(
             'id'                => $id,
@@ -588,8 +814,41 @@ class ManualLoadingController extends Controller
             'weight_all_kk'     => $request->weight_all_kk,
         );  
 
-        // dd($per_pallet,$pallet_qty,$weight_qty,$pallet_item_id,$container,$pallet_weight);
+        // dd(Session::get('container'),Session::get('pallet_weight'),Session::get('mainpallet'),Session::get('concat'));
         return view('box.preview_manual',$data);
+    }
+
+    public function load_container(Request $request){
+        
+        $main = Mainpallet::where('mp_id',$request->id)->first();
+
+        if((int)$request->qty_old <  (int)$request->qty){
+            $qty        = $request->qty_old;
+            $qty_item   =  $request->qty_old  * ($main->mp_qty / $request->qty);
+        }else{
+            $qty        = $request->qty;
+            $qty_item   = $request->qty  * ($main->mp_qty / $request->qty);
+        }
+
+        
+      
+        //  Session::forget('cart');
+        $product = collect([
+            'qty' =>  $qty,
+            'id' =>  $request->id,
+            'item' =>  $qty_item,
+        ]);
+
+        Session::push('cart', $product);
+        $mainpallet2 = Mainpallet::where('mp_id',$request->id)->first();
+
+
+        $mainpallet = Mainpallet::where('mp_id',$request->id)->first();
+        $mainpallet->mp_qty         =  $mainpallet2->mp_qty - $qty_item;
+        $mainpallet->mp_pallet_qty  =  $mainpallet2->mp_pallet_qty - $qty;
+        $mainpallet->save();
+        echo 1;
+       
     }
 }
 

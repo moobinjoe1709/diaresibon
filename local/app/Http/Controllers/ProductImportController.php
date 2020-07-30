@@ -53,10 +53,10 @@ class ProductImportController extends Controller
      */
     public function store(Checkimport $request)
     {   
-      
+        
         $path = $request->file('upload')->getRealPath();
         $data = Excel::load($path,function($reader){})->get();
-
+        
      
        
         $products = DB::table('tb_products')

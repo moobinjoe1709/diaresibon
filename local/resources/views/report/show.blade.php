@@ -43,7 +43,7 @@ Report
                 <br>
                 Container No. {{++$key}}
                 <table class="table table-bordered table-striped table-hover">
-                    <thead>
+                    <thead >
                         <tr>
                             <th class="text-center">Pallet No.</th>
                             <th class="text-center">F/G ID </th>

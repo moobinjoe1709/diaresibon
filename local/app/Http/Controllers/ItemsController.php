@@ -7,6 +7,7 @@ use DB;
 use Session;
 use Redirect;
 use Excel;
+use App;
 use App\Items;
 use App\SubItems;
 use App\Customers;
@@ -160,25 +161,64 @@ class ItemsController extends Controller
     }
 
     public function loadmaster(){
-        // Excel::create('New file', function($excel) {
+       // Excel::create('New file', function($excel) {
         //     $excel->sheet('New sheet', function($sheet) {
         //         $sheet->loadView('item.master');
         //     });
         // });
-        $itmes = DB::table('tb_items')->leftjoin('tb_customers','tb_items.it_ct_id','=','tb_customers.ct_id')->get();
-        $customers = Customers::all();
-        $data = array(
-            'items' => $itmes,
-            'customers' => $customers
-        );
+        // $itmes = DB::table('tb_items')->leftjoin('tb_customers','tb_items.it_ct_id','=','tb_customers.ct_id')->get();
+        // $customers = Customers::all();
+        // $data = array(
+        //     'items' => $itmes,
+        //     'customers' => $customers
+        // );
 
-        Excel::create('Filename', function($excel) use ($data) {
-            $excel->sheet('Filename', function($sheet) use ($data) {
-                $sheet->loadView('item.master',$data);
-            });
+        // dd($data);
+        // Excel::create('Filename', function($excel) use ($data) {
+        //     $excel->sheet('Filename', function($sheet) use ($data) {
+        //         $sheet->loadView('item.master',$data);
+        //     });
         
-        })->download('xls');
+        // })->download('xls');
         
+        // Excel::create('Filename', function($excel){
+        //     $excel->sheet('Filename', function($sheet) {
+        //         $sheet->loadView('item.master');
+        //     });
+        // })->export('xls');
+    }
+
+    public function addmaster(Request $request){
+  
+        $path = $request->file('upload')->getRealPath();
+        $data = Excel::load($path,function($reader){})->get();
+
+        
+        foreach($data  as $key => $value){
+            if($value['customer_id'] != null){
+                $items = new Items;
+                $items->it_ct_id        = $value['customer_id'];
+                $items->it_name         = $value['item'];
+                $items->save();
+    
+                $subitems = new SubItems;
+                $subitems->sit_it_id            =   $items->it_id;
+                $subitems->st_c_id              =   $value['customer_id'];
+                $subitems->sit_netweight        =   $value['netweight'];
+                $subitems->sit_grossweight      =   $value['grossweight'];
+                $subitems->sit_cbm              =   $value['cbm'];
+                $subitems->sit_cartonwidth      =   $value['cartonwidth'];
+                $subitems->sit_cartonlenght     =   $value['cartonlenght'];
+                $subitems->sit_cartonheigh      =   $value['cartonheight'];
+                $subitems->sit_palletvolume     =   $value['pallet_volume'];
+                $subitems->sit_cartonlayer      =   $value['cartonlayer'];
+                $subitems->sit_cartonperlayer   =   $value['cartonperlayer'];
+                $subitems->sit_pallet   =   $value['type_pallet'];
+                $subitems->save();      
+            }
+           
+        }
+        return Redirect::back()->with('success', 'บันทึกรายการ Master เรียบร้อยแล้ว!!    ');
     }
     
 }

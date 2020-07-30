@@ -10,9 +10,11 @@ class ContainerDetial extends Model
     protected $primaryKey = 'ctnd_id';
     protected $fillable = [
         'ctnd_ctn_id',
-        'ctnd_mp_id',
-        'ctnd_pallet_qty',
-        'remark',
+        'ctnd_pd_id',
+        'ctnd_group',
+        'ctnd_type',
+        'ctnd_key',
+        'ctnd_max',
     ];
     
     // public $timestamps = false;
